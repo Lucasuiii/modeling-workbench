@@ -12,16 +12,23 @@ Runs under **Codex** and **Claude Code**. Current version: **v0.6**; older works
 
 The repository is named `modeling-workbench`; the Skill invocation remains `$cumcm-workflow`, with the same Skill directory and `.cumcm` workspace format.
 
-**Coverage has two layers:** the existing automated delivery pipeline remains **CUMCM + LaTeX/PDF**. Other competitions receive modeling and writing guidance, without new runtime modes, schemas or exporters.
+## Competition support
 
-| Scenario | Reusable guidance |
-|---|---|
-| Fixed-problem graduate, MathorCup, electrical-engineering and regional modeling contests | Problem decomposition, model candidates, computation evidence, mechanism validation and mathematical argument |
-| English tasks such as MCM/ICM and APMCM | The same modeling/review approach, plus English summaries, terminology and audience-specific documents when requested |
-| Teddy Cup and other data-analysis tasks | Data definitions, cleaning, leakage prevention, baselines and task-matched evaluation |
-| Statistical modeling and open-topic tasks | Official theme, data feasibility, research design, team-defined questions and supportable conclusions |
+**Other competitions can reuse the modeling, computation and review methods and writing guidance, but automatic paper generation and final delivery are not yet compatible with every competition.** Use the support levels below:
 
-These names are routing examples, not per-contest end-to-end certification. Page limits, language, templates and submission requirements come from user-supplied current official materials. Automatic English templates, non-CUMCM finalizing and DOCX export are not implemented; see [competition adaptation and tool boundaries](.agents/skills/cumcm-workflow/references/competition-adaptation.md).
+| Competition or scenario | Current support | Still requires adaptation |
+|---|---|---|
+| CUMCM | Existing modeling, computation, review, LaTeX/PDF generation and delivery pipeline | Current official templates and submission requirements still need checking |
+| Fixed-problem graduate, MathorCup, electrical-engineering and regional contests | Problem decomposition, model candidates, run recording and result indexing, mechanism validation and paper argument guidance | Competition-specific paper templates and automated final delivery |
+| English tasks such as MCM/ICM and APMCM | The shared methods, plus English summaries, terminology and requested audience-specific documents | Automatic English templates and competition-specific automated final delivery |
+| Teddy Cup and other data-analysis tasks | Data definitions, cleaning, leakage prevention, baselines and task-matched evaluation guidance; reusable computation evidence tools | Result files, papers and submission packages required by the current rules |
+| Statistical modeling and open-topic tasks | Theme constraints, data feasibility, research design, team-defined questions and evidence scope guidance | Full end-to-end validation of open-topic projects and their submission formats |
+
+**Tool boundary:** the paper initializer and template schema remain bound to CUMCM, and automated delivery requires LaTeX/PDF; there is no DOCX export pipeline. Other competitions can proceed with applicable analysis, modeling, computation and review, then prepare a draft after the conclusion checkpoint. This does not establish a passed automated final delivery.
+
+For another competition, give the agent the **competition name, year, official materials, paper language and intended delivery format**. Ask it to read the [competition adaptation guide](.agents/skills/cumcm-workflow/references/competition-adaptation.md) and explain the executable scope before proceeding. Page limits, language, templates and submission requirements come from current official materials.
+
+This table describes guidance coverage and tool reuse, not per-contest end-to-end certification. Passing the existing regression suite does not establish successful real-problem trials for every competition.
 
 ## Quick start
 
