@@ -1,6 +1,6 @@
 ---
 name: cumcm-workflow
-description: Build or resume mathematical-modeling competition work, including CUMCM, MCM/ICM, graduate and regional contests, data challenges, and open-topic statistical modeling. Guide problem framing, modeling, computation, validation, and Chinese or English writing; the automated final-delivery pipeline currently targets CUMCM LaTeX/PDF. Not for ordinary paper polishing.
+description: Build or resume mathematical-modeling competition work, including CUMCM, MCM/ICM, graduate and regional contests, data challenges, and open-topic statistical modeling. Guide problem framing, modeling, computation, validation, Chinese or English LaTeX writing, and reviewed PDF/source delivery using current official requirements. Not for ordinary paper polishing.
 ---
 
 # Modeling Workbench
@@ -19,7 +19,7 @@ Read additional guidance only when the active work needs it:
 | Choose a model, audit data, design a useful comparison within the available budget | [Task-driven modeling](references/task-driven-modeling.md) during analysis/model design/computation |
 | English summary, audience-specific memo, references or format adaptation | [Competition writing](references/competition-writing.md) during paper planning |
 
-These guides extend modeling and writing coverage; they do not add runtime settings or certify another contest's submission. Existing v0.6 scripts/schema still bind the paper template to CUMCM and delivery to LaTeX/PDF. Never mislabel a competition or fabricate a compile receipt to get past that boundary.
+For paper initialization, pass the actual `--competition` and `--language zh|en` to `init_latex_paper.py`; omitted options retain CUMCM/Chinese behavior. The shared LaTeX/PDF compile, review and source-package chain works across competition names. Generic scaffolds are not official templates: current-rule compliance, page QA and the three human stops still apply. DOCX export is not implemented.
 
 ## Start or resume
 

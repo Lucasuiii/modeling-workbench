@@ -14,21 +14,28 @@ The repository is named `modeling-workbench`; the Skill invocation remains `$cum
 
 ## Competition support
 
-**Other competitions can reuse the modeling, computation and review methods and writing guidance, but automatic paper generation and final delivery are not yet compatible with every competition.** Use the support levels below:
+**Multiple competitions share the modeling, computation, review and Chinese/English LaTeX/PDF delivery pipeline.** Paper initialization accepts the actual competition name and language, followed by the same compilation, page review, source packaging and human checkpoints.
 
-| Competition or scenario | Current support | Still requires adaptation |
+| Competition or scenario | Current support | Still requires checking |
 |---|---|---|
-| CUMCM | Existing modeling, computation, review, LaTeX/PDF generation and delivery pipeline | Current official templates and submission requirements still need checking |
-| Fixed-problem graduate, MathorCup, electrical-engineering and regional contests | Problem decomposition, model candidates, run recording and result indexing, mechanism validation and paper argument guidance | Competition-specific paper templates and automated final delivery |
-| English tasks such as MCM/ICM and APMCM | The shared methods, plus English summaries, terminology and requested audience-specific documents | Automatic English templates and competition-specific automated final delivery |
-| Teddy Cup and other data-analysis tasks | Data definitions, cleaning, leakage prevention, baselines and task-matched evaluation guidance; reusable computation evidence tools | Result files, papers and submission packages required by the current rules |
-| Statistical modeling and open-topic tasks | Theme constraints, data feasibility, research design, team-defined questions and evidence scope guidance | Full end-to-end validation of open-topic projects and their submission formats |
+| CUMCM | Existing complete workflow; Chinese CTeX scaffold by default | Current official templates and submission requirements |
+| Fixed-problem graduate, MathorCup, electrical-engineering and regional contests | Shared modeling/validation guidance, Chinese paper scaffold, PDF and source delivery | Competition-specific formatting, attachments and result files |
+| English tasks such as MCM/ICM and APMCM | Shared computation/review pipeline, English scaffold and writing guidance, PDF and source delivery | Current summary sheets, page accounting and supplementary documents |
+| Teddy Cup and other data-analysis tasks | Data processing/evaluation guidance and shared Chinese/English paper and delivery tools | Required result tables, data fields and package contents |
+| Statistical modeling and open-topic tasks | Topic selection, data feasibility and research design guidance, with shared paper/delivery tools | Official theme, actual research design and conclusions the data support |
 
-**Tool boundary:** the paper initializer and template schema remain bound to CUMCM, and automated delivery requires LaTeX/PDF; there is no DOCX export pipeline. Other competitions can proceed with applicable analysis, modeling, computation and review, then prepare a draft after the conclusion checkpoint. This does not establish a passed automated final delivery.
+**A generic scaffold is not an official template.** The initializer does not infer page limits or formatting rules from a competition name. A declared official paper template still takes priority and must be adopted or adapted first. Current-rule compliance, actual page quality and final human acceptance retain their existing checks. DOCX export and automatic conversion of arbitrary official templates are not provided.
 
-For another competition, give the agent the **competition name, year, official materials, paper language and intended delivery format**. Ask it to read the [competition adaptation guide](.agents/skills/cumcm-workflow/references/competition-adaptation.md) and explain the executable scope before proceeding. Page limits, language, templates and submission requirements come from current official materials.
+Supply the **competition name, year, official materials, paper language and target delivery format**. After you accept the reviewed conclusions, the agent can initialize a paper as follows and use the existing compile/delivery steps:
 
-This table describes guidance coverage and tool reuse, not per-contest end-to-end certification. Passing the existing regression suite does not establish successful real-problem trials for every competition.
+```bash
+python3 "$S/init_latex_paper.py" --project <project> --competition 'MCM/ICM' \
+  --language en --competition-year <year> --title '<actual title>' --keywords '<actual keywords>'
+```
+
+`S` is the absolute path to the Skill's `scripts` directory. Use `--language zh` for Chinese. Omitting the new options retains CUMCM/Chinese defaults; existing calls and v0.6 workspaces need no migration. See the [competition adaptation guide](.agents/skills/cumcm-workflow/references/competition-adaptation.md).
+
+Validation covers real compilation, rendering and packaging of both language scaffolds, plus synthetic non-CUMCM finalizing flows and existing gates. It does not certify every organizer/year or establish full contest-problem trials.
 
 ## Quick start
 

@@ -3,9 +3,12 @@
 Initialize after a claim-led `PAPER_PLAN.json` exists:
 
 ```bash
-python3 "$S/init_latex_paper.py" --project <project> --competition-year <year> \
+python3 "$S/init_latex_paper.py" --project <project> --competition <actual-name> --language <zh-or-en> \
+  --competition-year <year> \
   --title <title> --keywords '<actual object; model; method>'
 ```
+
+`--competition` records the actual competition; it does not load a competition-specific format preset. `--language zh` uses the Chinese CTeX scaffold; `--language en` uses an English article scaffold with the same modular body and evidence binding. Omitted options retain CUMCM/Chinese defaults. The template mode `contest_article` identifies the English asset; it is not a new workflow mode. The existing Chinese asset ID `cumcm-contest-ctex` is retained for compatibility and does not override the manifest's actual competition name.
 
 Supply `--title` and `--keywords` from the actual problem, model, data, or method. The initializer has no reader-facing generic fallback and rejects generic title placeholders or workflow-oriented keyword filler.
 

@@ -24,14 +24,23 @@ The examples below identify useful entry points, not verified support for each o
 
 No fixed model count, chart quota, page target or diagram tool follows from this table. A topic named “prediction” may actually require an actionable decision; an English-language problem may require no memo at all.
 
-## What v0.6 tools can actually do
+## Shared LaTeX/PDF delivery
 
-- The problem/model/result contracts and run recorders can organize fixed questions or explicitly identified team-defined research questions. Keep MATLAB/Python selection and the existing evidence semantics.
-- `init_project.py --official` accepts a supplied official theme/rule document as an input; it does not require a pre-existing numbered problem. Supply a truthful project ID. Its generated CUMCM brief heading is a default, not a competition determination; correct the descriptive brief when adapting it. Keep team data separate from that official input set and classify its provenance honestly.
-- `init_latex_paper.py` generates a Chinese CTeX scaffold and writes `competition: CUMCM`; its schema also requires that competition. It has no English/competition-selection switch. Even `official_package_adapter` does not remove the CUMCM restriction.
-- Delivery expects a reviewed PDF, editable LaTeX sources and computation sources. Word/Markdown-only delivery has no export-receipt path in this version. Do not rename a DOCX ZIP as a LaTeX package or mark an ordinary converter run as a TeX compile.
+- `init_project.py --official` accepts a supplied official theme/rule document as an input; it does not require a pre-existing numbered problem. Supply a truthful project ID, keep team data separate from the official input set and classify provenance honestly.
+- After the existing conclusion checkpoint, `init_latex_paper.py --competition <actual-name> --language zh|en` generates a Chinese CTeX or English article scaffold. The competition name is stored in the template manifest; it does not select a rule preset. Omitting the options preserves CUMCM/Chinese defaults. The template manifest keeps the chosen scaffold ID/mode, so downstream tools use the actual files rather than guessing language from the contest name.
+- Use the same `record_compile.py`, `paper-delivery` handoff, package builder and final checks for every competition. They bind the real PDF and editable sources. The competition is part of the existing paper-stage snapshot and handoff; changing it after review requires renewed review through the existing process.
+- A declared official paper template still takes priority: generic initialization stops so the agent can adopt/adapt the supplied template and maintain the existing `official_package_adapter` manifest. That adapter may now identify the actual competition. Automated conversion of arbitrary official templates is not provided.
+- Generic scaffolds start with `official_compliance: unverified`. Apply current rules for title/summary sheets, page size/counting, identifiers, appendices and required supporting files before the existing final compliance review. A successful compile does not establish compliance.
+- Delivery expects a reviewed PDF, editable LaTeX sources and computation sources. Word/Markdown-only delivery has no export-receipt path. Do not rename a DOCX ZIP as a LaTeX package or mark an ordinary converter run as a TeX compile.
 
-For a non-CUMCM project, use the applicable analysis, modeling, computation and review guidance, and prepare a clearly labeled paper draft after the existing conclusion checkpoint. Report the unsupported automated paper/delivery boundary before using it; do not invoke the CUMCM LaTeX initializer as if it supported the new competition. If an authorized separate export is needed, deliver it honestly as a separately reviewed artifact, not as a passed v0.6 finalizing pipeline. Ask for a targeted adapter change only if that automated completion is requested.
+For example, after `PAPER_PLAN` and current human conclusion acceptance are ready:
+
+```bash
+python3 "$S/init_latex_paper.py" --project <p> --competition 'MCM/ICM' \
+  --language en --competition-year <year> --title '<actual title>' --keywords '<actual keywords>'
+```
+
+Use `--language zh` with the actual competition name for a Chinese paper. Read [LaTeX template guidance](latex-template.md) for the shared compile/render process. Synthetic pipeline tests and real scaffold compilation exercise the infrastructure; they do not certify every organizer/year or replace real-problem validation.
 
 ## Preserve the current decisions
 

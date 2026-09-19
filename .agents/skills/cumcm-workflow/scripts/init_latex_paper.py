@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Initialize a modular v0.6 CUMCM LaTeX paper without overwriting existing work."""
+"""Initialize a modular v0.6 contest LaTeX paper without overwriting existing work."""
 
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ from official_materials import classified_official_materials
 
 
 WORKFLOW_VERSION = "0.6.0"
-TEMPLATE_ID = "cumcm-contest-ctex"
+TEMPLATE_DIRS = {"zh": "generic-ctex", "en": "generic-en"}
 
 
 def read_object(path: Path) -> dict[str, Any]:
@@ -164,12 +164,20 @@ def commit_staged_tree(staging: Path, paper_dir: Path) -> None:
         raise
 
 
-def initialize(project: Path, title: str, competition_year: int, keywords: str) -> Path:
+def initialize(
+    project: Path, title: str, competition_year: int, keywords: str,
+    *, competition: str = "CUMCM", language: str = "zh",
+) -> Path:
+    competition = competition.strip()
+    if not competition or any(ord(char) < 32 for char in competition):
+        raise ValueError("competition must be a non-empty name without control characters")
+    if language not in TEMPLATE_DIRS:
+        raise ValueError("language must be zh or en")
     state, _, plan = validate_inputs(project)
     from workflow_checks import require_human_checkpoint
     require_human_checkpoint(project, "validation")
     skill_root = Path(__file__).resolve().parents[1]
-    template_root = skill_root / "assets" / "latex-template" / "generic-ctex"
+    template_root = skill_root / "assets" / "latex-template" / TEMPLATE_DIRS[language]
     template_meta = read_object(template_root / "template.json")
     template_sources = official_paper_template_sources(project)
     if template_sources:
@@ -253,7 +261,7 @@ def initialize(project: Path, title: str, competition_year: int, keywords: str) 
             "template_version": template_meta["template_version"],
             "mode": template_meta["mode"],
             "engine": template_meta["engine"],
-            "competition": "CUMCM",
+            "competition": competition,
             "competition_year": competition_year,
             "official_compliance": "unverified",
             "official_template_source": None,
@@ -263,7 +271,7 @@ def initialize(project: Path, title: str, competition_year: int, keywords: str) 
             "subproblem_sections": subproblem_records,
             "required_files": required_files,
             "placeholder_markers": ["CUMCM-TODO", "\\placeholder{"],
-            "template_source": f"repo_asset:{TEMPLATE_ID}@{WORKFLOW_VERSION}",
+            "template_source": f"repo_asset:{template_meta['template_id']}@{template_meta['template_version']}",
         }
         (staging / "LATEX_TEMPLATE_MANIFEST.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
@@ -273,17 +281,20 @@ def initialize(project: Path, title: str, competition_year: int, keywords: str) 
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Initialize the canonical reader-facing LaTeX template for a v0.6 CUMCM project")
+    parser = argparse.ArgumentParser(description="Initialize a Chinese or English contest LaTeX scaffold for a v0.6 project")
     parser.add_argument("--project", required=True, type=Path)
     parser.add_argument("--title", required=True, help="reader-facing title derived from the actual problem")
     parser.add_argument("--competition-year", type=int, default=datetime.now().year)
+    parser.add_argument("--competition", default="CUMCM", help="actual competition name from supplied materials; not a rules preset")
+    parser.add_argument("--language", choices=sorted(TEMPLATE_DIRS), default="zh", help="paper scaffold language; independent of competition name")
     parser.add_argument("--keywords", required=True, help="semicolon-separated keywords from the actual problem, model, or method")
     args = parser.parse_args()
     project = args.project.resolve()
     if not project.is_dir():
         parser.error(f"project is not a directory: {project}")
     try:
-        manifest = initialize(project, args.title, args.competition_year, args.keywords)
+        manifest = initialize(project, args.title, args.competition_year, args.keywords,
+                              competition=args.competition, language=args.language)
     except ValueError as exc:
         parser.error(str(exc))
     print(f"initialized modular LaTeX paper: {manifest}")

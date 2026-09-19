@@ -1,6 +1,6 @@
 ---
 name: cumcm-workflow
-description: Build or resume mathematical-modeling competition work, including CUMCM, MCM/ICM, graduate and regional contests, data challenges, and open-topic statistical modeling. Guide problem framing, modeling, computation, validation, and Chinese or English writing; the automated final-delivery pipeline currently targets CUMCM LaTeX/PDF. Not for ordinary paper polishing.
+description: Build or resume mathematical-modeling competition work, including CUMCM, MCM/ICM, graduate and regional contests, data challenges, and open-topic statistical modeling. Guide problem framing, modeling, computation, validation, Chinese or English LaTeX writing, and reviewed PDF/source delivery using current official requirements. Not for ordinary paper polishing.
 ---
 
 # Claude Code entry point

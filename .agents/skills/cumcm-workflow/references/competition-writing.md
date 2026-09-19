@@ -1,6 +1,6 @@
 # Writing across competition languages and audiences
 
-Use for English-language work, audience-specific deliverables, reference verification. Combine with [paper writing](06-paper-writing.md), which remains the common argument and QA guide. Check [competition adaptation](competition-adaptation.md) before choosing a generator: this guidance does not add an English template, a Word exporter or another contest's finalizing support to v0.6.
+Use for English-language work, audience-specific deliverables or reference verification. Combine with [paper writing](06-paper-writing.md), which remains the common argument and QA guide. Choose `--language en` or `zh` and the actual `--competition` for the shared LaTeX/PDF chain; see [competition adaptation](competition-adaptation.md). A generic English scaffold is not an official Summary Sheet or proof of format compliance. Word export remains unsupported.
 
 ## Organize around the requested answer
 

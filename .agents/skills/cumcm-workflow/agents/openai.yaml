@@ -1,6 +1,6 @@
 interface:
   display_name: "Modeling Workbench"
-  short_description: "面向多类建模比赛的建模、验证与中英文写作指导，保留国赛交付链"
+  short_description: "多比赛建模、验证、中英文 LaTeX 写作与 PDF 交付，保留人工确认"
   default_prompt: "使用 $cumcm-workflow，根据我提供的当届官方材料识别比赛要求和工具支持范围，开始题目分析，按现有流程在模型选择、写作前结论和最终交付处等待我确认。"
 policy:
   allow_implicit_invocation: true

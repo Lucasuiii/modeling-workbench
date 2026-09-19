@@ -46,7 +46,10 @@ def record_decisions(root: Path, stages: tuple[str, ...]) -> None:
     decision_path.write_text("".join(json.dumps(event, ensure_ascii=False, separators=(",", ":")) + "\n" for event in events), encoding="utf-8")
 
 
-def build_paper_ready_project(root: Path, *, decisions: tuple[str, ...] | None = None) -> None:
+def build_paper_ready_project(
+    root: Path, *, decisions: tuple[str, ...] | None = None,
+    competition: str = "CUMCM", language: str = "zh",
+) -> None:
     build_valid_project(root)
     paper_path = root / "paper" / "paper.pdf"
     paper_artifact = {"path": "paper/paper.pdf", "sha256": digest_file(paper_path)}
@@ -130,7 +133,8 @@ def build_paper_ready_project(root: Path, *, decisions: tuple[str, ...] | None =
     )
     write_json(root, "paper/PAPER_PLAN.json", plan)
 
-    initialize_latex(root, "Synthetic CUMCM Paper", 2026, "synthetic; evidence")
+    initialize_latex(root, "Synthetic Modeling Paper", 2026, "synthetic; evidence",
+                     competition=competition, language=language)
     for source in (root / "paper").rglob("*.tex"):
         text = source.read_text(encoding="utf-8")
         text = text.replace("CUMCM-TODO", "已完成").replace("\\placeholder{", "\\textbf{")
