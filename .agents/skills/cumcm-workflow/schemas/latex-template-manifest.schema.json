@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://raw.githubusercontent.com/Lucasuiii/cumcm-workflow/main/.agents/skills/cumcm-workflow/schemas/latex-template-manifest.schema.json",
+  "$id": "https://raw.githubusercontent.com/Lucasuiii/modeling-workbench/main/.agents/skills/cumcm-workflow/schemas/latex-template-manifest.schema.json",
   "allOf": [{"$ref": "common.schema.json#/$defs/envelope"}],
   "type": "object",
   "required": ["template_id", "template_version", "mode", "engine", "competition", "competition_year", "official_compliance", "main_path", "metadata_path", "section_files", "subproblem_sections", "required_files", "placeholder_markers", "template_source"],

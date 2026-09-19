@@ -1,4 +1,4 @@
-# CUMCM Workflow
+# Modeling Workbench
 
 简体中文 | [English](README.en.md)
 
@@ -9,6 +9,8 @@
 它不提供现成答案，也不替你判断模型是否正确；它负责让**每一个写进论文的结论都能追回到官方题目和一次真实发生过的计算**，并在模型选择、写论文前的结论、最终交付三个关键节点把决定交还给你。
 
 支持 **Codex** 与 **Claude Code**。当前版本 **v0.6**；不向下兼容旧版本工作区。
+
+仓库名称为 `modeling-workbench`；Skill 调用名仍为 `$cumcm-workflow`，Skill 目录与 `.cumcm` 工作区格式保持不变。
 
 **覆盖范围分两层：**现有自动交付链仍是 **CUMCM＋LaTeX/PDF**；其他比赛扩展的是建模与写作指导，没有新增运行模式、schema 或导出器。
 
@@ -51,7 +53,7 @@
 第一次使用时，先打开一个独立对话，只完成工作流下载和环境准备，**不要放入赛题路径，也不要初始化项目**。在一个可写的本地工作目录中发送：
 
 ```text
-请为 https://github.com/Lucasuiii/cumcm-workflow 的最新 main 工作流准备运行环境。
+请为 https://github.com/Lucasuiii/modeling-workbench 的最新 main 工作流准备运行环境。
 本对话只负责下载工作流、读取使用说明、检查并配置环境；
 不要读取赛题、不要初始化赛题项目，也不要开始建模。
 
@@ -74,9 +76,9 @@
 对话一确认环境就绪后，**新建第二个对话**。把它报告的工作流目录，以及你自己的官方材料目录和新项目输出目录，填入下面的提示：
 
 ```text
-请使用已经准备好的 CUMCM Workflow 开始本次赛题。
+请使用已经准备好的 Modeling Workbench 开始本次赛题。
 
-工作流工具目录：/绝对路径/cumcm-workflow
+工作流工具目录：/绝对路径/modeling-workbench
 官方材料目录：/绝对路径/赛题资料
 新项目输出目录：/绝对路径/尚不存在的目录
 

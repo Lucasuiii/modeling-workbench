@@ -1,4 +1,4 @@
-# CUMCM Workflow
+# Modeling Workbench
 
 English | [简体中文](README.md)
 
@@ -9,6 +9,8 @@ An AI-agent workflow built around the China Undergraduate Mathematical Contest i
 It does not supply a ready-made answer or decide whether a model is mathematically correct. It makes sure that **every conclusion entering the paper can be traced to the official problem and a computation that actually ran**, while returning decisions to you at model selection, conclusions before paper writing, and final delivery.
 
 Runs under **Codex** and **Claude Code**. Current version: **v0.6**; older workspaces are not supported.
+
+The repository is named `modeling-workbench`; the Skill invocation remains `$cumcm-workflow`, with the same Skill directory and `.cumcm` workspace format.
 
 **Coverage has two layers:** the existing automated delivery pipeline remains **CUMCM + LaTeX/PDF**. Other competitions receive modeling and writing guidance, without new runtime modes, schemas or exporters.
 
@@ -50,7 +52,7 @@ For first use, open a dedicated conversation that handles only the workflow down
 
 ```text
 Prepare the runtime environment for the latest main workflow from
-https://github.com/Lucasuiii/cumcm-workflow.
+https://github.com/Lucasuiii/modeling-workbench.
 This conversation is only for downloading the workflow, reading its instructions,
 and checking and configuring the environment. Do not read a contest problem,
 initialize a contest project, or begin modelling.
@@ -76,9 +78,9 @@ Even if the Skill is already installed, use this conversation to confirm the che
 After conversation one confirms that the environment is ready, **start a new conversation**. Insert the workflow directory it reported, your official-materials directory, and a new project output directory into this prompt:
 
 ```text
-Use the prepared CUMCM Workflow to begin this contest problem.
+Use the prepared Modeling Workbench to begin this contest problem.
 
-Workflow tools directory: /absolute/path/to/cumcm-workflow
+Workflow tools directory: /absolute/path/to/modeling-workbench
 Official materials directory: /absolute/path/to/official-materials
 New project output directory: /absolute/path/to/a-directory-that-does-not-exist
 
