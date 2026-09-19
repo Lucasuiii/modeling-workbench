@@ -2,122 +2,103 @@
 
 English | [简体中文](README.md)
 
-An AI-agent workflow built around the China Undergraduate Mathematical Contest in Modeling. It starts from official materials and connects modelling, computation, review, paper writing and final delivery into one inspectable, traceable evidence chain. The Skill also provides task-driven modeling, open-topic research and Chinese/English writing guidance for other modeling competitions.
+**From problem statement to paper, with evidence you can inspect.**
 
-**Preserve official materials → analyse the problem → evaluate model candidates → run official computation → review independently → write in LaTeX → QA and deliver the PDF**
+A mathematical modeling competition workflow for **Codex / Claude Code**. Supply the official problem and attachments; the agent works through problem analysis, model comparison, computation, review and Chinese/English LaTeX/PDF delivery. You review and decide whether to proceed at three key checkpoints.
 
-It does not supply a ready-made answer or decide whether a model is mathematically correct. It makes sure that **every conclusion entering the paper can be traced to the official problem and a computation that actually ran**, while returning decisions to you at model selection, conclusions before paper writing, and final delivery.
+**Read the problem → compare models → compute → review independently → write → check and deliver the PDF**
 
-Runs under **Codex** and **Claude Code**. Current version: **v0.6**; older workspaces are not supported.
+- **Compare before committing to a model**: evaluate candidates and record why a model was selected before official computation.
+- **Trace paper values to their source**: computation records connect code, data and results, with stale-evidence detection after code changes.
+- **Deliver inspectable materials**: a Chinese or English paper, source and results, review records, and a compiled PDF checked page by page.
 
-The repository is named `modeling-workbench`; the Skill invocation remains `$cumcm-workflow`, with the same Skill directory and `.cumcm` workspace format.
+The workflow helps organize and verify the process. Model suitability and the validity of conclusions still require judgment grounded in the problem and evidence.
 
-## Competition support
-
-**Multiple competitions share the modeling, computation, review and Chinese/English LaTeX/PDF delivery pipeline.** Paper initialization accepts the actual competition name and language, followed by the same compilation, page review, source packaging and human checkpoints.
-
-| Competition or scenario | Current support | Still requires checking |
-|---|---|---|
-| CUMCM | Existing complete workflow; Chinese CTeX scaffold by default | Current official templates and submission requirements |
-| Fixed-problem graduate, MathorCup, electrical-engineering and regional contests | Shared modeling/validation guidance, Chinese paper scaffold, PDF and source delivery | Competition-specific formatting, attachments and result files |
-| English tasks such as MCM/ICM and APMCM | Shared computation/review pipeline, English scaffold and writing guidance, PDF and source delivery | Current summary sheets, page accounting and supplementary documents |
-| Teddy Cup and other data-analysis tasks | Data processing/evaluation guidance and shared Chinese/English paper and delivery tools | Required result tables, data fields and package contents |
-| Statistical modeling and open-topic tasks | Topic selection, data feasibility and research design guidance, with shared paper/delivery tools | Official theme, actual research design and conclusions the data support |
-
-**A generic scaffold is not an official template.** The initializer does not infer page limits or formatting rules from a competition name. A declared official paper template still takes priority and must be adopted or adapted first. Current-rule compliance, actual page quality and final human acceptance retain their existing checks. DOCX export and automatic conversion of arbitrary official templates are not provided.
-
-Supply the **competition name, year, official materials, paper language and target delivery format**. After you accept the reviewed conclusions, the agent can initialize a paper as follows and use the existing compile/delivery steps:
-
-```bash
-python3 "$S/init_latex_paper.py" --project <project> --competition 'MCM/ICM' \
-  --language en --competition-year <year> --title '<actual title>' --keywords '<actual keywords>'
-```
-
-`S` is the absolute path to the Skill's `scripts` directory. Use `--language zh` for Chinese. Omitting the new options retains CUMCM/Chinese defaults; existing calls and v0.6 workspaces need no migration. See the [competition adaptation guide](.agents/skills/cumcm-workflow/references/competition-adaptation.md).
-
-Validation covers real compilation, rendering and packaging of both language scaffolds, plus synthetic non-CUMCM finalizing flows and existing gates. It does not certify every organizer/year or establish full contest-problem trials.
+[Quick start](#quick-start) · [Competition support](#competition-support) · [Architecture](#2-architecture) · [Computation records](#4-recording-computation) · [Development](#11-development)
 
 ## Quick start
 
-### 1. Prepare the materials
+**Have Codex or Claude Code ready, and put the official problem, attachments and current submission requirements in one folder.** Then copy the two prompts below. You do not need to install the Skill first, fill in contracts or run scripts individually.
 
-Put the current year's official materials in one local directory. During initialization, the workflow copies and identifies these files without modifying the source directory.
+### Step 1: prepare the environment (first use)
 
-| What to prepare | Required? | Notes |
-|---|---|---|
-| **Codex or Claude Code** | Required | Needs network, local file and terminal execution access |
-| **Python 3.10+** | Required | The agent checks dependencies on first use; official computation may use MATLAB or Python |
-| **Official problem statement or research theme** | Required | The PDF, Word file or other official edition defines the task, theme and constraints; team-defined questions must not be presented as official questions |
-| **Official attachments and result templates** | Required when supplied | Raw data, instructions and files such as `result*.xlsx`; keep them together and do not overwrite the originals |
-| **Current format, submission and AI-use rules** | Required when published | Used for paper layout, submission packaging and compliance; do not substitute rules from another year |
-| **A new output directory** | Required | Use an absolute path that does not yet exist, separate from both the official materials and workflow tools |
-
-### 2. Check the path format
-
-- **macOS / MacBook**: an example materials path is `/Users/yourname/Documents/official-materials`.
-- **Windows (WSL2 recommended)**: run the agent and workflow tools in the WSL2 Linux environment. Windows `C:\Users\yourname\Documents\official-materials` typically maps to `/mnt/c/Users/yourname/Documents/official-materials`; a new project can use `/home/your-wsl-username/cumcm-projects/2026B`.
-- **Native Windows PowerShell**: the Bash examples later in this README, especially `$S`, `$PWD` and `ln -s`, cannot be copied verbatim. CI currently runs on Linux and native Windows has not been validated end to end, so WSL2 is the preferred route.
-
-Use path formats visible to the **agent's execution environment**; do not mix Windows and WSL paths. Python, the selected computation backend and XeLaTeX must also be installed in that execution environment.
-
-### 3. Conversation one: download the workflow and prepare the environment
-
-For first use, open a dedicated conversation that handles only the workflow download and environment setup. **Do not provide the contest-materials path or initialize a project yet.** From a writable local working directory, send:
+Open a conversation in a writable local directory and send:
 
 ```text
-Prepare the runtime environment for the latest main workflow from
-https://github.com/Lucasuiii/modeling-workbench.
-This conversation is only for downloading the workflow, reading its instructions,
-and checking and configuring the environment. Do not read a contest problem,
-initialize a contest project, or begin modelling.
-
-First inspect the current working directory without changing it. Use git clone to download the repository
-into a separate tools directory. If a checkout from the same repository already exists,
-inspect its remote, version and local changes; do not overwrite existing work.
-Create a separate clean checkout if needed.
-Read the complete .agents/skills/cumcm-workflow/SKILL.md inside the tools directory.
-Using the Skill's absolute path, check Python 3.10+, required Python dependencies,
-an available MATLAB or Python computation backend, XeLaTeX, and PDF rendering support.
-
-Before installing dependencies or changing the system environment, list the proposed
-changes and wait for my explicit approval. Once the environment is ready, stop and report
-the workflow directory, absolute Skill path, detected versions, available backend,
-and any remaining limitations for use in the next conversation.
+Download or reuse https://github.com/Lucasuiii/modeling-workbench in a separate
+tools directory. Inspect existing checkouts first; do not overwrite local changes.
+Read the complete .agents/skills/cumcm-workflow/SKILL.md in the repository.
+Follow it to check Python 3.10+, Python dependencies, a MATLAB or Python
+computation backend, XeLaTeX and PDF rendering tools.
+List proposed installations or environment changes and wait for my approval.
+Only prepare the environment; do not initialize a contest project yet.
+Report the tools directory, versions and any missing requirements when finished.
 ```
 
-Even if the Skill is already installed, use this conversation to confirm the checkout version, actual Skill path and runtime environment. A discoverable Skill alone does not prove that the environment is ready.
+### Step 2: start modeling (each new problem)
 
-### 4. Conversation two: initialize the contest project and begin
-
-After conversation one confirms that the environment is ready, **start a new conversation**. Insert the workflow directory it reported, your official-materials directory, and a new project output directory into this prompt:
+Once the environment is ready, **open a new conversation**, replace the three paths below and send. Use the tools path from step 1; choose a new output directory that does not exist yet, separate from the tools and materials.
 
 ```text
-Use the prepared Modeling Workbench to begin this contest problem.
-
+Use Modeling Workbench to begin this modeling task.
 Workflow tools directory: /absolute/path/to/modeling-workbench
 Official materials directory: /absolute/path/to/official-materials
-New project output directory: /absolute/path/to/a-directory-that-does-not-exist
+New project output directory: /absolute/path/to/new-project
 
-First inspect the workflow and official-materials directories without changing them.
-Confirm the workflow version and working-tree state, and do not overwrite existing work.
-Read the complete .agents/skills/cumcm-workflow/SKILL.md and invoke scripts using
-the Skill's absolute path. Confirm that the Python dependencies, computation backend,
-and XeLaTeX environment prepared in conversation one are still available.
-If the environment is incomplete, stop and report what is missing; do not install
-dependencies or change the system environment in this conversation.
-
-Identify the problem statement, attachments, result templates, and current format,
-submission and AI-use rules. Initialize a new project from the official materials,
-then follow the Skill into problem reading and decomposition.
-Stop for my explicit confirmation at model selection, conclusions before paper
-writing, and final delivery.
+Read the complete .agents/skills/cumcm-workflow/SKILL.md in the tools directory.
+Check the environment and official materials first; do not overwrite existing work.
+Report missing dependencies without installing them in this conversation.
+Identify the contest, year, paper language and submission requirements from
+the materials; ask me if unclear. Follow the Skill to initialize the project
+and begin problem analysis. Wait for my explicit confirmation at model selection,
+conclusions before paper writing, and final delivery.
 ```
 
-If the Skill is already installed, conversation two may invoke `$cumcm-workflow` in Codex or `/cumcm-workflow` in Claude Code, but it should still provide the workflow, official-materials and new-project directories.
+**Follow the stage prompts to review the work.** Reuse the prepared environment by starting at step 2 for another problem. To resume interrupted work, provide the project output directory and ask to “resume cumcm-workflow”; resume an existing project instead of initializing it again.
 
-### 5. What you do after launch
+<details>
+<summary>Paths, Windows and environment troubleshooting</summary>
 
-The first conversation leaves behind reusable workflow tools and an environment report. The second copies the official materials, initializes the project, and begins with problem reading and decomposition. You do not need to prefill contracts or run every script yourself. Review the current material and decide whether to continue at the three explicit human checkpoints. After an interruption, return to the second conversation, provide the output directory, and ask to “resume cumcm-workflow”.
+- **macOS**: an example path is `/Users/yourname/Documents/official-materials`.
+- **Windows: WSL2 recommended**. Run the agent and tools inside WSL2. A materials path might be `/mnt/c/Users/yourname/Documents/official-materials`; a new project can go in `/home/your-wsl-username/modeling-projects/2026B`.
+- Use paths visible to the **agent's execution environment**. Python, the computation backend and XeLaTeX must also be available in that environment.
+- Native PowerShell has not been validated end to end; the Bash examples later in this README cannot be copied verbatim.
+- Ask the agent to check and report missing dependencies; you do not need to configure the entire toolchain manually beforehand. Setup time depends on installed dependencies, and first-time LaTeX setup may take a while.
+- Initialization copies and identifies the official materials without modifying the source folder. For open-topic tasks, supply the official theme and requirements.
+
+</details>
+
+<details>
+<summary>Already installed? Skill name and version notes</summary>
+
+Invoke `$cumcm-workflow` in Codex or `/cumcm-workflow` in Claude Code. Still provide the materials and new-project directories, and confirm the actual Skill path and environment are usable.
+
+The repository is named `modeling-workbench`; the Skill invocation, directory and `.cumcm` workspace format are unchanged. Current version: **v0.6**; workspaces older than v0.6 are unsupported. The multi-competition extension retains CUMCM/Chinese defaults, so existing v0.6 workspaces need no migration.
+
+</details>
+
+## Competition support
+
+Built from the CUMCM workflow, with a shared modeling, computation, review and Chinese/English paper delivery pipeline for other competitions.
+
+| Competition or task | Available support | Adapt to current requirements |
+|---|---|---|
+| CUMCM | Complete workflow; Chinese paper scaffold by default | Official template and submission rules |
+| Graduate, MathorCup, electrical-engineering and regional contests | General modeling/validation guidance, Chinese PDF and source delivery | Specific formatting, attachments and result files |
+| English tasks such as MCM/ICM and APMCM | English writing guidance, English PDF and source delivery | Summary sheets, page accounting and supplementary documents |
+| Teddy Cup and other data-analysis tasks | Data processing/evaluation guidance and shared paper delivery tools | Result tables, data fields and package contents |
+| Statistical modeling and open-topic tasks | Topic selection, data feasibility and research design guidance | Official theme, data sources and scope of conclusions |
+
+**A generic paper scaffold is not an official template.** Current official requirements take priority. DOCX export and automatic conversion of arbitrary official templates are not provided. The agent supplies the competition name and paper language at the paper stage; you do not need to run initialization commands manually. See the [competition adaptation guide](.agents/skills/cumcm-workflow/references/competition-adaptation.md).
+
+<details>
+<summary>What has compatibility testing covered?</summary>
+
+Validation covers actual compilation, rendering and packaging of both language scaffolds, plus synthetic non-CUMCM finalizing flows and existing gates. It does not certify every organizer/year or establish full contest-problem trials for every category.
+
+</details>
+
+---
 
 ## 1. What v0.6 is about
 
