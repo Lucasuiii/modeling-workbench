@@ -2,6 +2,8 @@
 
 Delivery is a `finalizing` responsibility. It uses only current user-supplied official rules/templates and the fresh `paper-delivery` handoff. That handoff must identify the reviewed PDF, the compile-bound editable LaTeX snapshot/entry point, every official computation source selected through `RESULTS_INDEX → successful official run → source snapshot`, and the official paper materials still requiring compliance review.
 
+For another contest or Word-only submission, read the tool boundary in [competition adaptation](competition-adaptation.md). The broader Skill guidance does not change this stage's CUMCM template binding or required LaTeX/PDF receipts. Do not relabel artifacts to claim support. Apply [competition writing](competition-writing.md) to rule-dependent references and supplementary documents without assuming new automatic checks exist.
+
 Produce the receipt with the recorder, not by hand:
 
 ```bash

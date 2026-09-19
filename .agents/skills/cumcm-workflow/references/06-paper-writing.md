@@ -4,6 +4,8 @@ Start in a fresh task when practical. Read `handoffs/validation-paper/HANDOFF.js
 
 Treat handoff `representation_candidates` as prompts for judgment, not a prescribed chart list. They flag evidence shapes that may benefit from visualization even when no figure exists yet. Select prose, equation, table, or figure according to the claim. Handoff limitations contain claim limits, P1 concerns, and model applicability/assumption/known-limit information; do not reinterpret model scope itself as a limitation.
 
+For English work, audience-specific documents, reference verification, read [competition writing](competition-writing.md). Follow current official requirements while preserving the reviewed claim scope. Check [competition adaptation](competition-adaptation.md) before initializing a paper for another contest: the current generator and template schema are still CUMCM-specific. A manually prepared draft does not establish a passed automated delivery.
+
 ## Plan the argument before LaTeX
 
 1. Select the validated claims that answer the official questions.

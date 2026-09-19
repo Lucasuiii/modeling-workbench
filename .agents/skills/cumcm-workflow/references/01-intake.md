@@ -4,6 +4,8 @@
 
 Create a read-only inventory of the official problem, attachments, and current competition rules before interpretation.
 
+For another competition or a different language/deliverable, use [competition adaptation](competition-adaptation.md) to establish requirements and the current tool boundary. For open-topic work, the official theme and instructions are the initial official inputs; team-selected questions and external datasets must not be presented as organizer-provided facts.
+
 ## Procedure
 
 1. The user-facing initializer is conversational. When the user supplies an official file or directory path and asks to initialize, inspect that path read-only, infer the project ID from the available context, choose a safe sibling workspace when no target is specified, and run `scripts/init_project.py` for them. Do not ask the user to type the Python command. Ask only when the source is missing, the year/problem identifier cannot be inferred, or the proposed target is non-empty.

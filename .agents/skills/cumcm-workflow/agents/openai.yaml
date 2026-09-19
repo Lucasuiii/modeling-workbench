@@ -1,6 +1,6 @@
 interface:
-  display_name: "CUMCM Workflow"
-  short_description: "可复现的国赛建模、计算、写作与交付流程"
-  default_prompt: "使用 $cumcm-workflow，把我提供的官方题目文件路径自主初始化为一个新的国赛项目，并停在 intake 人工审查门禁。"
+  display_name: "Mathematical Modeling Workflow"
+  short_description: "面向多类建模比赛的建模、验证与中英文写作指导，保留国赛交付链"
+  default_prompt: "使用 $cumcm-workflow，根据我提供的当届官方材料识别比赛要求和工具支持范围，开始题目分析，按现有流程在模型选择、写作前结论和最终交付处等待我确认。"
 policy:
   allow_implicit_invocation: true

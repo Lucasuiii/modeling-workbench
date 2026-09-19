@@ -2,13 +2,24 @@
 
 English | [简体中文](README.md)
 
-An AI-agent workflow for the China Undergraduate Mathematical Contest in Modeling. It starts from official materials and connects modelling, computation, review, paper writing and final delivery into one inspectable, traceable evidence chain.
+An AI-agent workflow built around the China Undergraduate Mathematical Contest in Modeling. It starts from official materials and connects modelling, computation, review, paper writing and final delivery into one inspectable, traceable evidence chain. The Skill also provides task-driven modeling, open-topic research and Chinese/English writing guidance for other modeling competitions.
 
 **Preserve official materials → analyse the problem → evaluate model candidates → run official computation → review independently → write in LaTeX → QA and deliver the PDF**
 
 It does not supply a ready-made answer or decide whether a model is mathematically correct. It makes sure that **every conclusion entering the paper can be traced to the official problem and a computation that actually ran**, while returning decisions to you at model selection, conclusions before paper writing, and final delivery.
 
 Runs under **Codex** and **Claude Code**. Current version: **v0.6**; older workspaces are not supported.
+
+**Coverage has two layers:** the existing automated delivery pipeline remains **CUMCM + LaTeX/PDF**. Other competitions receive modeling and writing guidance, without new runtime modes, schemas or exporters.
+
+| Scenario | Reusable guidance |
+|---|---|
+| Fixed-problem graduate, MathorCup, electrical-engineering and regional modeling contests | Problem decomposition, model candidates, computation evidence, mechanism validation and mathematical argument |
+| English tasks such as MCM/ICM and APMCM | The same modeling/review approach, plus English summaries, terminology and audience-specific documents when requested |
+| Teddy Cup and other data-analysis tasks | Data definitions, cleaning, leakage prevention, baselines and task-matched evaluation |
+| Statistical modeling and open-topic tasks | Official theme, data feasibility, research design, team-defined questions and supportable conclusions |
+
+These names are routing examples, not per-contest end-to-end certification. Page limits, language, templates and submission requirements come from user-supplied current official materials. Automatic English templates, non-CUMCM finalizing and DOCX export are not implemented; see [competition adaptation and tool boundaries](.agents/skills/cumcm-workflow/references/competition-adaptation.md).
 
 ## Quick start
 
@@ -20,7 +31,7 @@ Put the current year's official materials in one local directory. During initial
 |---|---|---|
 | **Codex or Claude Code** | Required | Needs network, local file and terminal execution access |
 | **Python 3.10+** | Required | The agent checks dependencies on first use; official computation may use MATLAB or Python |
-| **Official problem statement** | Required | The PDF, Word file or other official edition is the source for requirements and numerical constraints |
+| **Official problem statement or research theme** | Required | The PDF, Word file or other official edition defines the task, theme and constraints; team-defined questions must not be presented as official questions |
 | **Official attachments and result templates** | Required when supplied | Raw data, instructions and files such as `result*.xlsx`; keep them together and do not overwrite the originals |
 | **Current format, submission and AI-use rules** | Required when published | Used for paper layout, submission packaging and compliance; do not substitute rules from another year |
 | **A new output directory** | Required | Use an absolute path that does not yet exist, separate from both the official materials and workflow tools |

@@ -65,3 +65,33 @@ Choose the experimental unit and split to match deployment. Fit imputation, scal
 **Discriminating check:** for prediction on unseen objects, intersect the object IDs in train and test; row-disjoint sets may still share every object. Preserve the offending IDs as diagnostic evidence.
 
 **Boundary:** predicting future records for known objects can permit shared IDs if temporal and feature availability constraints are respected. Low rank limits particular parameter interpretations, not every prediction. Without candidate validation, report an unverified prediction rather than fabricating experimental confirmation.
+
+## Data transformations and evaluation targets
+
+**When:** cleaning, joining, aggregating or filling data changes the observations supporting an answer, or a reported metric chooses a model.
+
+Reconcile keys, multiplicities, units, denominators and time coverage across the raw-to-result path. Check whether an operation changes the intended population or weights, and whether preprocessing uses information unavailable at deployment. Compare models on the same target, population and information set; choose errors or costs that match the requested use. A global average can hide failure on the group or horizon that matters.
+
+**Discriminating check:** a supposedly one-to-one join duplicates an entity because the lookup table contains two rows for its key; a sum or mean can then change even though every original key remains present. Inspect expected key cardinality and the affected records, not only nonempty output.
+
+**Boundary:** one-to-many joins and population-changing filters can be intended. Verify their mathematical meaning and resulting weights; do not force row-count invariance on every transformation. A zero denominator or unavailable outcome may make a metric undefined, not zero error.
+
+## Statistical interpretation and causal claims
+
+**When:** the answer interprets an interval, test, regression coefficient or policy effect as a statement about a population or intervention.
+
+Identify the estimand, sampling/assignment unit, dependence and assumptions needed for that interpretation. Uncertainty must match the design; treating correlated records as independent can manufacture precision. Account for outcome-driven selection or multiple comparisons where they support the claim. Distinguish association, prediction and intervention effects. A design name such as DID or IV is not evidence that its identification assumptions hold.
+
+**Discriminating check:** duplicating every observation should not create independent information; a narrower interval from treating copies as new independent samples exposes a unit-of-analysis error. Inspect the data-generating dependence and variance calculation rather than deciding from the p-value alone.
+
+**Boundary:** a nonsignificant difference is not equivalence; a meaningful equivalence claim needs a justified margin and suitable evidence. Descriptive or predictive tasks need no invented causal experiment. Missing identification can limit the claim, but dropping a required causal question does not answer it.
+
+## Ranking and constructed indicators
+
+**When:** normalized indicators and chosen weights produce a ranking or recommendation.
+
+Trace indicator direction, units, missing-data handling, correlated or duplicate constructs, weights and aggregation. Explain whether the weights express stakeholder preference, data variation or an estimated relation. Test plausible choices near a consequential rank reversal; report stable conclusions separately from preference-dependent ones. Recompute the published ranking from its actual published inputs and transformations.
+
+**Discriminating check:** duplicating an indicator and splitting or retaining weights can change its effective influence; check whether the resulting rank change reflects a justified preference or accidental double counting. Calling a method “objective weighting” does not settle that question.
+
+**Boundary:** there need not be a universal correct ranking. Sensitivity to legitimate preferences can be the answer rather than a bug; do not manufacture a single winner if the task permits conditional recommendations.

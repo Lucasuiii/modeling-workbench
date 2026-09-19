@@ -1,5 +1,7 @@
 # Stage 2: Problem analysis
 
+For a team-selected question under an official theme, first use [open-topic research](open-topic-research.md), then express the chosen research questions through the same outputs below. When observations or data preparation determine the answer, consult the data section of [task-driven modeling](task-driven-modeling.md). Keep official requirements, external observations and team assumptions distinguishable.
+
 ## Required outputs
 
 - `analysis/PROBLEM_FACTS.json`

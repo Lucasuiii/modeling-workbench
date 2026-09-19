@@ -4,6 +4,8 @@
 
 Produce one reliable official implementation, successful run evidence, and an exact result index. Working mode may keep exploratory and failed runs, but only a successful `official_run: true` run may support a formal result.
 
+For data-intensive work, follow the applicable data preparation, evaluation and budget guidance in [task-driven modeling](task-driven-modeling.md). Preserve consequential preprocessing and result-file transformations as declared dependencies; a clean-looking table or successful training run is not evidence that the population, split or submission fields are correct.
+
 ## Choose one backend
 
 Use the project preference (`matlab` preferred, `python` fallback, `auto` selection) as a tie-break, not a mandate. Compare the actual task:

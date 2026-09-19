@@ -1,11 +1,25 @@
 ---
 name: cumcm-workflow
-description: Build or resume a contest-ready CUMCM project from official files through modeling, one selected computation backend, bounded independent validation, fresh-context paper writing, and final delivery. Use for real CUMCM work; do not use for ordinary paper polishing or unsupported one-shot answers.
+description: Build or resume mathematical-modeling competition work, including CUMCM, MCM/ICM, graduate and regional contests, data challenges, and open-topic statistical modeling. Guide problem framing, modeling, computation, validation, and Chinese or English writing; the automated final-delivery pipeline currently targets CUMCM LaTeX/PDF. Not for ordinary paper polishing.
 ---
 
 # CUMCM Workflow
 
 Spend reasoning on the problem, mathematics, experiments and explanation. Tools maintain execution records, hashes, snapshots and stage state. Do not create extra checklists or repeatedly edit contracts to silence warnings.
+
+## Competition and task routing
+
+For a new competition, read [competition adaptation](references/competition-adaptation.md) to identify the current official requirements and the supported automation boundary. Competition names do not determine methods, page limits or evidence standards. Keep the existing stages, two knobs and three human stops.
+
+Read additional guidance only when the active work needs it:
+
+| Current need | Read |
+|---|---|
+| Choose a research question under an official theme; find suitable data | [Open-topic research](references/open-topic-research.md) during problem analysis |
+| Choose a model, audit data, design a useful comparison within the available budget | [Task-driven modeling](references/task-driven-modeling.md) during analysis/model design/computation |
+| English summary, audience-specific memo, references or format adaptation | [Competition writing](references/competition-writing.md) during paper planning |
+
+These guides extend modeling and writing coverage; they do not add runtime settings or certify another contest's submission. Existing v0.6 scripts/schema still bind the paper template to CUMCM and delivery to LaTeX/PDF. Never mislabel a competition or fabricate a compile receipt to get past that boundary.
 
 ## Start or resume
 

@@ -81,6 +81,8 @@ A frozen contract must read as a design commitment, not as a transcript of whate
 
 Compare candidates using fit to the task contract, identifiability, data requirements, computation cost, interpretability, and validation opportunities. Do not force multiple models when one is clearly sufficient.
 
+Use the applicable family in [task-driven modeling](task-driven-modeling.md) when selecting the formulation, baseline and evidence. It also covers data audit and experiment priorities under a time budget. Reuse the fields and optional working notes above; no extra experiment contract or model quota is required.
+
 For the selected model, define state, decisions, parameters, objective, constraints, observation mechanism, stochastic assumptions, and numerical method. Declare whether an optimum is exact, local, heuristic, relaxed, sampled, or restricted to a stated policy class.
 
 Map every capability to a model component; `CAP-E013` reports any that no component takes on (a warning while working, an error once frozen), because a capability nobody claims is how a task quietly loses a requirement. Record each shared quantity's producer, consumers, definition, unit, time basis, transformation, uncertainty propagation, and authoritative artifact in the cross-question ledger. Resolve incompatible reuse before computation.

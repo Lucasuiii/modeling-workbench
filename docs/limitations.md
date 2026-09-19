@@ -1,5 +1,7 @@
 # 已知限制
 
+- 跨比赛扩展目前属于 Skill 指导层：新增比赛适配、自主选题、题型与数据建模、中英文写作指导，没有修改状态机、schema、记录器或关卡。`init_latex_paper.py` 和模板 schema 仍固定 CUMCM，交付仍要求 LaTeX/PDF；没有自动英文骨架或 DOCX 导出回执。其他比赛可复用前面的分析、计算和复核方法，但不能据此声称完整自动交付已经适配，不能把赛事改标为 CUMCM 来通过检查。具体边界见 [比赛适配](../.agents/skills/cumcm-workflow/references/competition-adaptation.md)。
+
 - v0.6 检查通过不代表模型、统计设计或全局最优性已经被证明。
 - v0.6 不向下兼容，也不提供迁移脚本：旧工作区用官方文件重新初始化。
 - Fresh context 能减少上下文污染，但不能证明 reviewer 真正独立；origin/reviewer task ref 仍是用户和工具记录的证据。
