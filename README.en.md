@@ -36,6 +36,34 @@ Only prepare the environment; do not initialize a contest project yet.
 Report the tools directory, versions and any missing requirements when finished.
 ```
 
+**If the agent cannot download the repository, use the ZIP alternative below for step 1. The original startup method remains available.**
+
+<details>
+<summary>Alternative: download a ZIP first and prepare from local files</summary>
+
+Open the [repository homepage](https://github.com/Lucasuiii/modeling-workbench) in your browser, select **Code → Download ZIP**, and extract the entire archive before asking the agent to proceed. An existing complete local copy can be reused without downloading it again.
+
+Keep the extracted workflow in a separate tools directory, such as `modeling/modeling-workbench-main/`. Store official materials separately and choose a new, nonexistent project output directory for step 2. Supply the directory containing `README.md` and `.agents/`, not the ZIP file or its parent directory. Preserve the hidden `.agents` directory when extracting.
+
+In the environment preparation conversation, replace the original step 1 prompt with:
+
+```text
+Prepare the environment using this downloaded and fully extracted local Modeling Workbench.
+Workflow tools directory: /absolute/path/to/modeling-workbench-main
+
+Do not clone the repository, check for updates or try other download locations.
+Read the complete .agents/skills/cumcm-workflow/SKILL.md in the tools directory.
+First run scripts/doctor.py and report usable stages and missing dependencies.
+If local files are incomplete, report the missing items and stop repository download attempts.
+Reuse installed dependencies. List proposed installations or environment changes and wait for my approval.
+Only prepare the environment; do not initialize a contest project yet.
+Report the actual tools directory, version and missing requirements when finished.
+```
+
+Then continue with the original **step 2**, using the actual extraction path as the tools directory. Downloading the ZIP still requires browser access to GitHub. This route avoids repeated repository download attempts by the agent; it does not make dependency installation offline. Missing paper tools such as LaTeX need not block problem analysis and modeling supported by the base environment; install them before the paper stage.
+
+</details>
+
 ### Step 2: start modeling (each new problem)
 
 Once the environment is ready, **open a new conversation**, replace the three paths below and send. Use the tools path from step 1; choose a new output directory that does not exist yet, separate from the tools and materials.
