@@ -33,6 +33,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -81,14 +82,16 @@ def file_record(root: Path, rel: str, role: str) -> dict[str, Any]:
 
 
 def infer_language(argv: list[str], explicit: str | None) -> str:
-    if explicit:
-        return explicit
-    joined = " ".join(argv).casefold()
-    if "matlab" in joined:
-        return "matlab"
-    if "python" in joined or joined.endswith(".py"):
-        return "python"
-    raise SystemExit("cannot infer the backend from the command; pass --language matlab|python")
+    if python_script_index(argv) is not None:
+        detected = "python"
+    elif (len(argv) == 3 and Path(argv[0]).name.lower() in {"matlab", "matlab.exe"}
+          and argv[1] == "-batch" and re.fullmatch(r"\s*run\('([^']+\.m)'\)\s*;?\s*", argv[2])):
+        detected = "matlab"
+    else:
+        raise SystemExit("cannot infer backend from a supported executable/invocation structure")
+    if explicit and explicit != detected:
+        raise SystemExit("declared backend differs from the executed invocation")
+    return detected
 
 
 def python_script_index(argv: list[str]) -> int | None:
@@ -261,6 +264,47 @@ def next_run_id(root: Path) -> str:
     return f"RUN-{index:03d}"
 
 
+@contextmanager
+def fresh_output_transaction(root: Path, run_dir: Path, paths: set[str]):
+    """Commit live fresh evidence only when the manifest write succeeds.
+
+    Keep old backups and rejected new files for recovery. This does not roll back
+    arbitrary model side effects or protect against concurrent/malicious writers.
+    """
+    backups = {}
+    prepared = []
+    committed = False
+    try:
+        for rel in sorted(paths):
+            target = root / rel
+            if target.is_file():
+                backup = run_dir / "previous_outputs" / rel
+                backup.parent.mkdir(parents=True, exist_ok=True)
+                target.replace(backup)
+                backups[rel] = backup
+            prepared.append(rel)
+        yield
+        committed = True
+    finally:
+        if not committed:
+            for rel in prepared:
+                target = root / rel
+                try:
+                    # A replaced parent directory must not redirect rollback outside
+                    # the workspace. Preserve backups and report rather than guess.
+                    if target.parent.resolve() != target.parent:
+                        raise OSError("output parent was replaced by a symlink")
+                    if target.exists() or target.is_symlink():
+                        rejected = run_dir / "rejected_outputs" / rel
+                        rejected.parent.mkdir(parents=True, exist_ok=True)
+                        target.replace(rejected)
+                    if rel in backups:
+                        target.parent.mkdir(parents=True, exist_ok=True)
+                        shutil.copy2(backups[rel], target)
+                except OSError as exc:
+                    print(f"cannot roll back {rel}: {exc}; recover from {run_dir}", file=sys.stderr)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Run a command and record its evidence; the agent never types a hash")
     parser.add_argument("--project", required=True, type=Path)
@@ -404,146 +448,123 @@ def main() -> int:
         target = root / rel
         if target.exists() and (not target.is_file() or target.stat().st_nlink != 1):
             parser.error(f"fresh evidence output must be a regular unlinked file: {rel}")
-    backups = {}
-    try:
-        for rel in sorted(fresh_paths):
-            target = root / rel
-            if target.is_file():
-                backup = run_dir / "previous_outputs" / rel
-                backup.parent.mkdir(parents=True, exist_ok=True)
-                target.replace(backup)
-                backups[rel] = backup
-    except OSError:
-        for rel, backup in backups.items():
-            shutil.copy2(backup, root / rel)
-        raise
-
-    started_at = utc_now()
-    try:
-        with stdout_path.open("w", encoding="utf-8") as out, stderr_path.open("w", encoding="utf-8") as err:
-            completed = subprocess.run(executed_command, cwd=root, stdout=out, stderr=err, timeout=args.timeout, check=False)
-        exit_code = completed.returncode
-        status = "completed" if exit_code == 0 else "failed"
-    except subprocess.TimeoutExpired:
-        exit_code = 124
-        status = "interrupted"
-    except FileNotFoundError as exc:
-        parser.error(f"cannot execute the command: {exc}")
-    finally:
-        # Fresh non-empty output is required. Restore old artifacts on missing/empty
-        # generation, while retaining backups even after a crash or partial failure.
+    with fresh_output_transaction(root, run_dir, fresh_paths):
+        started_at = utc_now()
+        try:
+            with stdout_path.open("w", encoding="utf-8") as out, stderr_path.open("w", encoding="utf-8") as err:
+                completed = subprocess.run(executed_command, cwd=root, stdout=out, stderr=err, timeout=args.timeout, check=False)
+            exit_code = completed.returncode
+            status = "completed" if exit_code == 0 else "failed"
+        except subprocess.TimeoutExpired:
+            exit_code = 124
+            status = "interrupted"
+        except FileNotFoundError as exc:
+            parser.error(f"cannot execute the command: {exc}")
         missing_fresh = [rel for rel in fresh_paths if not (root / rel).is_file() or (root / rel).is_symlink() or (root / rel).stat().st_nlink != 1 or (root / rel).stat().st_size == 0]
-        for rel in missing_fresh:
-            if rel in backups:
-                target = root / rel
-                if target.is_symlink() or target.is_file():
-                    target.unlink()
-                if not target.exists():
-                    shutil.copy2(backups[rel], target)
-    if missing_fresh:
-        parser.error("the command did not write fresh non-empty evidence; assertion file not rewritten by this run: " + ", ".join(sorted(missing_fresh)))
-    finished_at = utc_now()
+        if missing_fresh:
+            parser.error("the command did not write fresh non-empty evidence; assertion file not rewritten by this run: " + ", ".join(sorted(missing_fresh)))
+        finished_at = utc_now()
 
-    changed_under_run = sorted(
-        rel for rel, digest in read_before.items()
-        if not (root / rel).is_file() or sha256_file(root / rel) != digest
-    )
-    if changed_under_run:
-        parser.error(
-            "source or input changed while the run was executing: " + ", ".join(changed_under_run)
-            + " -- the frozen copy would not be what the run actually read; re-run with a settled workspace"
+        changed_under_run = sorted(
+            rel for rel, digest in read_before.items()
+            if not (root / rel).is_file() or sha256_file(root / rel) != digest
         )
+        if changed_under_run:
+            parser.error(
+                "source or input changed while the run was executing: " + ", ".join(changed_under_run)
+                + " -- the frozen copy would not be what the run actually read; re-run with a settled workspace"
+            )
 
-    official = args.official
-    if official and status != "completed":
-        print(f"run {run_id} exited {exit_code}; recording it as exploratory instead of official", file=sys.stderr)
-        official = False
-    if official and not capabilities:
-        parser.error("an official run must name at least one --capability")
+        official = args.official
+        if official and status != "completed":
+            print(f"run {run_id} exited {exit_code}; recording it as exploratory instead of official", file=sys.stderr)
+            official = False
+        if official and not capabilities:
+            parser.error("an official run must name at least one --capability")
 
-    # Inputs are hashed where they live: official material is immutable by intake
-    # contract, and a changed team input is drift worth seeing.
-    inputs = []
-    for spec in declared_inputs:
-        role = split_role(spec, INPUT_ROLES, "auxiliary_input")[1]
-        rel = relative(root, spec.split(":", 1)[0])
-        stored, frozen_here = freeze_input(root, run_dir, rel)
-        record = file_record(root, stored, role)
-        record["frozen"] = frozen_here
-        inputs.append(record)
-    untouched = [
-        rel for rel, before in mtimes_before.items()
-        if rel not in fresh_paths and before is not None and mtime_of(root, rel) == before
-    ]
-    if untouched:
-        print("declared output was not rewritten by this run: " + ", ".join(sorted(untouched)), file=sys.stderr)
+        # Inputs are hashed where they live: official material is immutable by intake
+        # contract, and a changed team input is drift worth seeing.
+        inputs = []
+        for spec in declared_inputs:
+            role = split_role(spec, INPUT_ROLES, "auxiliary_input")[1]
+            rel = relative(root, spec.split(":", 1)[0])
+            stored, frozen_here = freeze_input(root, run_dir, rel)
+            record = file_record(root, stored, role)
+            record["frozen"] = frozen_here
+            inputs.append(record)
+        untouched = [
+            rel for rel, before in mtimes_before.items()
+            if rel not in fresh_paths and before is not None and mtime_of(root, rel) == before
+        ]
+        if untouched:
+            print("declared output was not rewritten by this run: " + ", ".join(sorted(untouched)), file=sys.stderr)
 
-    # Source and outputs are frozen: a rerun would otherwise overwrite exactly the
-    # files this run's evidence points at.
-    frozen_sources = [freeze(root, run_dir, rel, "source") for rel in sources]
-    frozen_entry_point = freeze(root, run_dir, entry_point, "source")
-    outputs = []
-    for spec in declared_outputs:
-        role = split_role(spec, OUTPUT_ROLES, "diagnostic_output")[1]
-        rel = relative(root, spec.split(":", 1)[0])
-        record = file_record(root, freeze(root, run_dir, rel, "outputs"), role)
-        # Recorded so a reviewer can see what the produced-by-this-run decision rested on.
-        record["preexisting"] = mtimes_before.get(rel) is not None
-        if rel in fresh_paths:
-            record["generation_check"] = "absent_before_execution_nonempty_after"
-        outputs.append(record)
-    if not outputs:
-        # Every run produces at least its own log; recording it keeps a zero-flag
-        # exploratory run schema-valid without inventing a claim-bearing artifact.
-        outputs = [file_record(root, stdout_path.relative_to(root).as_posix(), "diagnostic_output")]
-    if official and not any(item["evidence_role"] == "claim_bearing_output" for item in outputs):
-        parser.error("an official run must declare at least one --output <path>:claim")
+        # Source and outputs are frozen: a rerun would otherwise overwrite exactly the
+        # files this run's evidence points at.
+        frozen_sources = [freeze(root, run_dir, rel, "source") for rel in sources]
+        frozen_entry_point = freeze(root, run_dir, entry_point, "source")
+        outputs = []
+        for spec in declared_outputs:
+            role = split_role(spec, OUTPUT_ROLES, "diagnostic_output")[1]
+            rel = relative(root, spec.split(":", 1)[0])
+            record = file_record(root, freeze(root, run_dir, rel, "outputs"), role)
+            # Recorded so a reviewer can see what the produced-by-this-run decision rested on.
+            record["preexisting"] = mtimes_before.get(rel) is not None
+            if rel in fresh_paths:
+                record["generation_check"] = "absent_before_execution_nonempty_after"
+            outputs.append(record)
+        if not outputs:
+            # Every run produces at least its own log; recording it keeps a zero-flag
+            # exploratory run schema-valid without inventing a claim-bearing artifact.
+            outputs = [file_record(root, stdout_path.relative_to(root).as_posix(), "diagnostic_output")]
+        if official and not any(item["evidence_role"] == "claim_bearing_output" for item in outputs):
+            parser.error("an official run must declare at least one --output <path>:claim")
 
-    manifest = {
-        "schema_version": WORKFLOW_VERSION,
-        "artifact_type": "run_manifest",
-        "project_id": json.loads((root / ".cumcm" / "state.json").read_text(encoding="utf-8"))["project_id"],
-        "updated_at": finished_at,
-        "producer": {"kind": "script", "name": "record_run.py", "version": WORKFLOW_VERSION},
-        "run_id": run_id,
-        "purpose": args.purpose or previous.get("purpose") or ("official computation" if official else "exploratory run"),
-        "capability_ids": capabilities,
-        "candidate_ids": candidates,
-        "argv": command,
-        "working_directory": ".",
-        "started_at": started_at,
-        "finished_at": finished_at,
-        "exit_code": exit_code,
-        "status": status,
-        "official_run": official,
-        "implementation": {
-            "selected_language": language,
-            "selection_rationale": args.rationale or previous.get("implementation", {}).get("selection_rationale") or f"recorded by record_run.py from the executed {language} command",
-            "entry_point": frozen_entry_point,
-            "runtime": observed_runtime,
-            "dependencies": args.dependency or [str(value) for value in previous.get("implementation", {}).get("dependencies", [])],
-            "matlab_toolboxes": args.toolbox if args.toolbox is not None else previous.get("implementation", {}).get("matlab_toolboxes", []),
-            "metadata_provenance": {"dependencies": "declared", "matlab_toolboxes": "declared"},
-            "fallback_from": None,
-            "source_snapshot": tree_snapshot(root, frozen_sources, entrypoint=frozen_entry_point),
-        },
-        "inputs": inputs,
-        "outputs": outputs,
-        "environment": {"platform": platform.platform(), "python": platform.python_version()},
-        "seeds": parse_seeds(args.seed) if args.seed is not None else [dict(seed, source="declared") for seed in previous.get("seeds", [])],
-        "stdout_path": stdout_path.relative_to(root).as_posix(),
-        "stderr_path": stderr_path.relative_to(root).as_posix(),
-        # Assertions are verdicts about THIS execution. Inheriting a parent's `pass`
-        # would hand formal verification evidence that was never produced.
-        "assertions": parse_assertions(args.assertions, assert_file_rel, root),
-        "parent_run_id": args.rerun or None,
-    }
-    destination = run_dir / "RUN_MANIFEST.json"
-    with tempfile.NamedTemporaryFile("w", encoding="utf-8", dir=run_dir, delete=False) as stream:
-        json.dump(manifest, stream, ensure_ascii=False, indent=2)
-        stream.write("\n")
-        temp_name = stream.name
-    os.replace(temp_name, destination)
+        manifest = {
+            "schema_version": WORKFLOW_VERSION,
+            "artifact_type": "run_manifest",
+            "project_id": json.loads((root / ".cumcm" / "state.json").read_text(encoding="utf-8"))["project_id"],
+            "updated_at": finished_at,
+            "producer": {"kind": "script", "name": "record_run.py", "version": WORKFLOW_VERSION},
+            "run_id": run_id,
+            "purpose": args.purpose or previous.get("purpose") or ("official computation" if official else "exploratory run"),
+            "capability_ids": capabilities,
+            "candidate_ids": candidates,
+            "argv": command,
+            "working_directory": ".",
+            "started_at": started_at,
+            "finished_at": finished_at,
+            "exit_code": exit_code,
+            "status": status,
+            "official_run": official,
+            "implementation": {
+                "selected_language": language,
+                "selection_rationale": args.rationale or previous.get("implementation", {}).get("selection_rationale") or f"recorded by record_run.py from the executed {language} command",
+                "entry_point": frozen_entry_point,
+                "runtime": observed_runtime,
+                "dependencies": args.dependency or [str(value) for value in previous.get("implementation", {}).get("dependencies", [])],
+                "matlab_toolboxes": args.toolbox if args.toolbox is not None else previous.get("implementation", {}).get("matlab_toolboxes", []),
+                "metadata_provenance": {"dependencies": "declared", "matlab_toolboxes": "declared"},
+                "fallback_from": None,
+                "source_snapshot": tree_snapshot(root, frozen_sources, entrypoint=frozen_entry_point),
+            },
+            "inputs": inputs,
+            "outputs": outputs,
+            "environment": {"platform": platform.platform(), "python": platform.python_version()},
+            "seeds": parse_seeds(args.seed) if args.seed is not None else [dict(seed, source="declared") for seed in previous.get("seeds", [])],
+            "stdout_path": stdout_path.relative_to(root).as_posix(),
+            "stderr_path": stderr_path.relative_to(root).as_posix(),
+            # Assertions are verdicts about THIS execution. Inheriting a parent's `pass`
+            # would hand formal verification evidence that was never produced.
+            "assertions": parse_assertions(args.assertions, assert_file_rel, root),
+            "parent_run_id": args.rerun or None,
+        }
+        destination = run_dir / "RUN_MANIFEST.json"
+        with tempfile.NamedTemporaryFile("w", encoding="utf-8", dir=run_dir, delete=False) as stream:
+            json.dump(manifest, stream, ensure_ascii=False, indent=2)
+            stream.write("\n")
+            temp_name = stream.name
+        os.replace(temp_name, destination)
 
     grade = "official" if official else "exploratory"
     print(f"recorded {grade} run {run_id} (exit {exit_code}) -> {destination.relative_to(root)}")
