@@ -72,23 +72,23 @@ Inputs under `problem/official/` are hashed where they live: they are immutable 
 
 A run may only use one backend per capability. That was a selector rule and a sentence in the docs; `RUN-E024` now enforces it, so a capability cannot end up with current official runs in both MATLAB and Python unless the user asked for cross-implementation validation. Warning while `working`, error once frozen.
 
-Stochastic work records its seeds so the simulation can be reproduced:
+Seed metadata is declared, not observed: `--seed` does not pass a seed to the model or set its RNG. Pass the seed through the actual model arguments/configuration and inspect the implementation and produced diagnostics. For a program accepting `--seed`:
 
 ```bash
-python3 "$S/record_run.py" --project <p> --seed 20260907 --seed bootstrap=7 -- python3 code/mc.py
+python3 "$S/record_run.py" --project <p> --seed 20260907 --seed bootstrap=7 -- python3 code/mc.py --seed 20260907 --bootstrap-seed 7
 ```
 
 Two things a run may never claim:
 
 - **an output it did not write.** The recorder stats every declared output before and after execution. A program that exits 0 without rewriting its claim-bearing output would otherwise have the previous run's file frozen as its own, with a real hash and false provenance; the recorder refuses to write the manifest at all and says which file was not produced. An untouched intermediate or diagnostic output only warns.
-`--assert-file` names a file the run must write during the run. record_run.py records the mtime before it starts and refuses the run if the file did not change, so yesterday's verdicts cannot be re-recorded as today's -- the same leftover trap that claim-bearing outputs close. A declared `--source` or `--input` must likewise exist before the run starts: something the run creates is an output, and freezing it as the code that ran would record a file the run generated as the file it read.
+`--assert-file` names a file the run must write during the run. The recorder moves existing assertion files and claim outputs into the new run’s `previous_outputs/` before execution and requires fresh non-empty regular files. Merely touching a path cannot reuse old bytes; recomputation with identical content is valid. Missing/empty generation restores the old file when available and refuses the manifest; backups remain recoverable. Do not use the same path for an input and output, write formal outputs under `runs/`, or run simultaneous writers against the same outputs. A declared `--source` or `--input` must likewise exist before the run starts: something the run creates is an output, and freezing it as the code that ran would record a file the run generated as the file it read.
 
 Acceptance checks judged `recorded` are the reason `--assert-file` exists. The capability names an assertion; the solving program computes it and writes the verdict out; `CAP-E012` checks that an official run for that capability recorded it passing. Have the program raise or write `passed: false` when the condition fails rather than reporting success and letting a later reader notice -- the point is that "we did the task" becomes something the run either shows or does not.
 
 - **a verdict it did not reach.** Assertions carry their provenance. `--assert name=pass` is a note typed by the caller and is recorded as `source: "declared"`; `--assert-file` reads verdicts the program wrote itself and is recorded as `source: "recorded"`. Only recorded verdicts satisfy a frozen `verification_plan` (`MODEL-E009`/`MODEL-W010`), and an official run carrying only declared ones raises `RUN-W003`. Assertions are also never inherited by a rerun -- new code has not been verified by the old run's `pass` -- and a rerun that drops its parent's assertions says so on stderr.
 - **evidence that moved under it.** Declared source and formal inputs are hashed before execution and re-checked after. Freezing happens once the command exits, so a file edited mid-run would be frozen as something the run never read; the recorder refuses to write the manifest and names the file.
 
-Only a **successful official** rerun supersedes its parent. A failed or exploratory child replaces nothing — retiring the parent on its account would invalidate the only usable evidence — and `--follow-lineage` skips it, taking the newest qualifying successor when a parent has several children.
+Only a **successful official** rerun supersedes its parent. A failed or exploratory child replaces nothing — retiring the parent on its account would invalidate the only usable evidence — and `--follow-lineage` skips it. Multiple successful official children are **ambiguous**: choose the intended branch explicitly with `--run-id`; no newest-child guess is made.
 
 Every formal consumer resolves "the run behind this result" through the same code, so the checker, the computation handoff, the review package and paper→delivery all refuse a superseded run rather than one of them quietly packaging it. Claims and figures still citing a retired run raise `CLAIM-W020` / `FIGURE-W013`.
 
@@ -111,3 +111,13 @@ Failed or exploratory runs may remain for local debugging with `official_run: fa
 Every result uses an exact `path#JSON-pointer` into a declared claim-bearing JSON output. Keep unrounded values authoritative and display rounding separate. A successful exit code proves execution, not model correctness, so include problem-specific feasibility, residual, conservation, baseline, or stability checks when they matter.
 
 Before validation, build `modeling-computation` and `computation-validation` handoffs. The latter points to canonical official runs/results. Computation→validation, the independent package, and paper→delivery all resolve the same chain: `RESULTS_INDEX.json` → referenced successful `official_run: true` manifest → current source snapshot. A missing, failed, non-official, or stale link fails every consumer rather than being silently skipped. The context-separated reviewer package copies only the official inputs, problem/model contracts, results index, that resolved evidence, formal inputs, claim-bearing outputs, and review instructions. It excludes failed/exploratory runs and stdout/stderr/debug history.
+
+## Invocation and provenance boundaries
+
+Use a direct `python [supported interpreter options] code/solve.py [model arguments]` invocation, or `matlab -batch "run('code/solve.m')"`. Inline `-c`, `-m`, shell wrappers and arbitrary MATLAB batch expressions are refused because a declared `--source` does not prove that file was executed. Put such logic in a real driver file and declare its helper sources. Interpreter flags not recognized by the recorder are also refused rather than guessed.
+
+Python runtime is probed using the resolved model executable and its interpreter options before execution; the manifest labels this observation. `environment.python` describes the recorder environment, not the model. MATLAB version remains explicitly unverified. This is not protection against a malicious executable impersonating Python or changing between probe and execution.
+
+Seeds carry `source: declared`. Reruns inherit seed and toolbox declarations unless overridden; dependencies/toolboxes are declared metadata, not observed use. Assertions are never inherited. Old seed records without a source tag are likewise declarations. This update does not retroactively certify older manifests.
+
+The canonical resolver verifies actual SHA256 for every formal input and claim-bearing output, in addition to source snapshots. Handoffs and independent review packages therefore reject missing or modified formal artifacts before accepting that evidence.

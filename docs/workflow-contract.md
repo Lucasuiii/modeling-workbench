@@ -36,12 +36,12 @@ Warning 和 suggestion 会进入报告，但不改变通过状态。
 
 记录期的两条硬规则（`record_run.py` 直接拒绝写 manifest）：
 
-- **不能冒领输出**：执行前后比对每个 declared output 的 mtime，未被本次写入的 claim 输出直接报错——否则一个 exit 0 却没干活的程序会把上一轮的结果连同真哈希一起冻结成自己的证据。intermediate/diagnostic 只警告。
+- **不能冒领输出**：执行前将旧 claim 输出和 `--assert-file` 文件移入新 run 的 `previous_outputs/`，要求本次重新生成非空常规文件。仅 touch 不能复用旧字节，重新计算得出相同字节可接受。缺失/空文件时恢复旧文件并拒绝 manifest；备份保留。intermediate/diagnostic 仍仅用 mtime 提醒。
 - **不能继承判决**：assertions 永不从父运行继承。新代码没被旧的 `pass` 验证过，继承它等于给 `MODEL-E009`/`MODEL-W010` 喂造假证据。
 - **不能手打判决充当已验证**：`--assert x=pass` 记为 `source: "declared"`（调用者的备注），`--assert-file` 读程序自己写出的判决，记为 `source: "recorded"`。只有后者能满足冻结模型的 `verification_plan`。
 - **证据不能在脚下移动**：声明的源码与 formal input 在执行前取哈希、执行后复核；冻结发生在命令退出之后，运行中被改过的文件会被冻结成"运行从未读过的东西"，直接拒绝记录。
 
-`--rerun` 追加而不覆盖；supersession 从 `parent_run_id` 链推导，不回写旧 manifest。**只有成功的 official child 才构成取代**——失败或探索性的 child 什么也没替代，让它退休父运行会把唯一可用的证据作废。一个父运行有多个 child 时，`--follow-lineage` 取最新的合格者。
+`--rerun` 追加而不覆盖；supersession 从 `parent_run_id` 链推导，不回写旧 manifest。**只有成功的 official child 才构成取代**——失败或探索性的 child 什么也没替代，让它退休父运行会把唯一可用的证据作废。一个父运行有多个成功 official child 时属于 ambiguous；必须用 `--run-id` 明确选择分支，不自动选最新。
 
 checker、computation handoff、独立复核包和 paper→delivery 共用 `canonical_evidence.resolve_official_computation`，所以"当前正式运行"在四处含义一致，不会出现 checker 拦住而 builder 照样打包的情况。重新指向结果必须用 `index_result.py --follow-lineage` 显式进行。
 
@@ -85,3 +85,5 @@ Targeted result 不必重复 full review 的 P1，但 validation→paper handoff
 ## 变化与重做范围
 
 确定性检查始终完整运行到目标阶段。需要被 scope 的是昂贵动作——重跑、重复核、重写——由 `plan_redo.py` 沿 ID 图反向遍历得出，并同时列出**不受影响**的 run、finding 和 section。v0.5 的 `cosmetic/local/semantic/claim_changing/global` 分类已删除。
+
+正式证据消费者统一由 canonical resolver 校验源码快照、全部 formal input 与 claim-bearing output 的实际 SHA256。入口仅接受可识别的直接 Python 脚本或 MATLAB `run('path.m')` 调用，`--source` 不能替代执行入口。Python runtime 来自实际命令解释器的运行前探测；seed、依赖和 toolbox 为声明元数据，rerun 保留 seed/toolbox 声明但不继承断言。

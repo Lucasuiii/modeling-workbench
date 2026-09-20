@@ -18,7 +18,7 @@ Freezing a run for formal results costs a few declarations:
 
     record_run.py --project P --official --capability CAP-Q1-001 \
         --source code/solve.py --input data/q1.csv:formal \
-        --output runs/out/q1.json:claim -- python3 code/solve.py
+        --output results/q1.json:claim -- python3 code/solve.py
 """
 
 from __future__ import annotations
@@ -91,28 +91,63 @@ def infer_language(argv: list[str], explicit: str | None) -> str:
     raise SystemExit("cannot infer the backend from the command; pass --language matlab|python")
 
 
+def python_script_index(argv: list[str]) -> int | None:
+    """Only direct Python script invocation is attributable without a wrapper."""
+    if not argv or not re.fullmatch(r"python(?:\d+(?:\.\d+)*)?(?:\.exe)?", Path(argv[0]).name, re.I):
+        return None
+    index = 1
+    while index < len(argv):
+        token = argv[index]
+        if token == "--":
+            index += 1
+            break
+        if token in {"-W", "-X"}:
+            index += 2
+        elif token in {"-B", "-E", "-I", "-s", "-S", "-u", "-O", "-OO", "-q", "-v"} or token.startswith(("-W", "-X")):
+            index += 1
+        elif token.startswith("-"):
+            return None
+        else:
+            break
+    return index if index < len(argv) and argv[index].endswith(".py") else None
+
+
 def infer_entry_point(root: Path, argv: list[str], sources: list[str]) -> str:
-    for token in argv[1:]:
-        stripped = token.split(":", 1)[0]
-        if stripped.endswith((".py", ".m")) and (root / stripped).is_file():
-            return relative(root, stripped)
-    if sources:
-        return sources[0]
-    raise SystemExit("cannot infer the entry point; pass --source <file>")
+    index = python_script_index(argv)
+    candidate = argv[index] if index is not None else None
+    # Keep MATLAB support explicit: one run('path.m') expression, no arbitrary batch code.
+    if candidate is None and argv and Path(argv[0]).name.lower() in {"matlab", "matlab.exe"}:
+        if len(argv) == 3 and argv[1] == "-batch":
+            match = re.fullmatch(r"\s*run\('([^']+\.m)'\)\s*;?\s*", argv[2])
+            if match:
+                candidate = match.group(1)
+    if candidate is not None and (root / candidate).is_file():
+        return relative(root, candidate)
+    raise SystemExit("cannot establish executed entry point; use python path.py or matlab -batch \"run('path.m')\"; --source only declares snapshot coverage")
 
 
-def runtime_label(language: str, argv: list[str]) -> str:
+def runtime_label(language: str, argv: list[str], root: Path | None = None) -> str:
     if language == "python":
-        return f"Python {platform.python_version()} ({sys.executable})"
-    executable = next((token for token in argv if "matlab" in token.casefold()), "matlab")
-    return f"MATLAB via {executable}"
+        index = python_script_index(argv)
+        if index is None:
+            raise SystemExit("cannot probe runtime for an unsupported Python invocation")
+        probe = [*argv[:index], "-c", "import sys,json; print(json.dumps([sys.version,sys.executable]))"]
+        # A CLI separator belongs before the script, not before our -c probe.
+        if "--" in probe:
+            probe.remove("--")
+        try:
+            result = subprocess.run(probe, cwd=root, capture_output=True, text=True, timeout=15, check=True)
+            version, executable = json.loads(result.stdout)
+        except (OSError, ValueError, subprocess.SubprocessError) as exc:
+            raise SystemExit(f"cannot observe model Python runtime: {exc}") from exc
+        return f"Python {version} ({executable}); observed interpreter probe before execution"
+    return f"MATLAB via {argv[0]} (version unverified)"
 
 
 def parse_assertions(
     entries: list[str],
     assertion_file: str | None,
     root: Path,
-    assertion_file_mtime_before: float | None = None,
 ) -> list[dict[str, Any]]:
     assertions: list[dict[str, Any]] = []
     for entry in entries:
@@ -127,14 +162,7 @@ def parse_assertions(
         target = root / assertion_file
         if not target.is_file():
             raise SystemExit(f"the run did not write its assertion file: {assertion_file}")
-        # Source `recorded` means this run computed the verdict. A file the run never
-        # touched is a leftover, and stamping it `recorded` would defeat the whole
-        # distinction -- the same leftover trap that claim-bearing outputs already close.
-        if assertion_file_mtime_before is not None and mtime_of(root, assertion_file) == assertion_file_mtime_before:
-            raise SystemExit(
-                f"the assertion file was not rewritten by this run: {assertion_file}; "
-                "have the program write its own verdicts, or drop --assert-file"
-            )
+        # Fresh generation is enforced before this parser is called.
         payload = json.loads(target.read_text(encoding="utf-8"))
         items = payload.get("assertions") if isinstance(payload, dict) else payload
         for item in items or []:
@@ -210,11 +238,11 @@ def child_run_id(root: Path, parent: str) -> str:
 
 
 def parse_seeds(entries: list[str]) -> list[dict[str, Any]]:
-    """Record the seeds a stochastic run was given, so a simulation is reproducible."""
+    """Caller declarations only; they do not establish delivery to or use by code."""
     seeds: list[dict[str, Any]] = []
     for entry in entries:
         name, sep, value = entry.partition("=")
-        seeds.append({"name": name.strip() if sep else "seed", "value": (value if sep else name).strip()})
+        seeds.append({"name": name.strip() if sep else "seed", "value": (value if sep else name).strip(), "source": "declared"})
     return seeds
 
 
@@ -246,9 +274,9 @@ def main() -> int:
     parser.add_argument("--output", action="append", default=[], help="path[:claim|intermediate|diagnostic]")
     parser.add_argument("--assert", dest="assertions", action="append", default=[], help="NAME=pass|fail")
     parser.add_argument("--assert-file", help="project-relative JSON file the run wrote with its own assertions")
-    parser.add_argument("--seed", action="append", default=[], help="NAME=VALUE (or a bare value) for a stochastic run; repeat as needed")
+    parser.add_argument("--seed", action="append", default=None, help="declared seed metadata only; does not set RNG state or pass arguments to the model")
     parser.add_argument("--dependency", action="append", default=[])
-    parser.add_argument("--toolbox", action="append", default=[])
+    parser.add_argument("--toolbox", action="append", default=None, help="declared toolbox metadata; not proof of loading or use")
     parser.add_argument("--language", choices=("matlab", "python"))
     parser.add_argument("--rationale")
     parser.add_argument("--official", action="store_true")
@@ -298,6 +326,20 @@ def main() -> int:
 
     language = infer_language(command, args.language or previous.get("implementation", {}).get("selected_language"))
     entry_point = infer_entry_point(root, command, sources)
+    expected_suffix = ".py" if language == "python" else ".m"
+    if not entry_point.endswith(expected_suffix):
+        parser.error("declared backend differs from the executed entry point")
+    executable_path = Path(command[0])
+    if executable_path.is_absolute():
+        executable = command[0]
+    elif executable_path.parent != Path(".") or command[0].startswith("./"):
+        executable = str(root / executable_path)
+    else:
+        executable = shutil.which(command[0])
+    if not executable:
+        parser.error("cannot locate execution runtime")
+    executed_command = [str(Path(executable).absolute()), *command[1:]]
+    observed_runtime = runtime_label(language, executed_command, root)
     if entry_point not in sources:
         sources.append(entry_point)
 
@@ -342,17 +384,44 @@ def main() -> int:
             "declared source or input does not exist before the run: " + ", ".join(absent)
         )
     assert_file_rel = relative(root, args.assert_file) if args.assert_file else None
-    assert_file_mtime_before = mtime_of(root, assert_file_rel) if assert_file_rel else None
     read_before = {
         rel: sha256_file(root / rel)
         for rel in dict.fromkeys(sources + declared_input_paths)
         if (root / rel).is_file()
     }
 
+    fresh_paths = {
+        relative(root, spec.split(":", 1)[0]) for spec in declared_outputs
+        if split_role(spec, OUTPUT_ROLES, "diagnostic_output")[1] == "claim_bearing_output"
+    }
+    if assert_file_rel:
+        fresh_paths.add(assert_file_rel)
+    if fresh_paths & set(read_before):
+        parser.error("claim/assertion outputs cannot also be source or input files; use separate paths")
+    for rel in fresh_paths:
+        if rel.startswith(("runs/", ".cumcm/", "problem/official/")):
+            parser.error(f"fresh evidence output cannot overwrite protected workspace material: {rel}")
+        target = root / rel
+        if target.exists() and (not target.is_file() or target.stat().st_nlink != 1):
+            parser.error(f"fresh evidence output must be a regular unlinked file: {rel}")
+    backups = {}
+    try:
+        for rel in sorted(fresh_paths):
+            target = root / rel
+            if target.is_file():
+                backup = run_dir / "previous_outputs" / rel
+                backup.parent.mkdir(parents=True, exist_ok=True)
+                target.replace(backup)
+                backups[rel] = backup
+    except OSError:
+        for rel, backup in backups.items():
+            shutil.copy2(backup, root / rel)
+        raise
+
     started_at = utc_now()
     try:
         with stdout_path.open("w", encoding="utf-8") as out, stderr_path.open("w", encoding="utf-8") as err:
-            completed = subprocess.run(command, cwd=root, stdout=out, stderr=err, timeout=args.timeout, check=False)
+            completed = subprocess.run(executed_command, cwd=root, stdout=out, stderr=err, timeout=args.timeout, check=False)
         exit_code = completed.returncode
         status = "completed" if exit_code == 0 else "failed"
     except subprocess.TimeoutExpired:
@@ -360,6 +429,19 @@ def main() -> int:
         status = "interrupted"
     except FileNotFoundError as exc:
         parser.error(f"cannot execute the command: {exc}")
+    finally:
+        # Fresh non-empty output is required. Restore old artifacts on missing/empty
+        # generation, while retaining backups even after a crash or partial failure.
+        missing_fresh = [rel for rel in fresh_paths if not (root / rel).is_file() or (root / rel).is_symlink() or (root / rel).stat().st_nlink != 1 or (root / rel).stat().st_size == 0]
+        for rel in missing_fresh:
+            if rel in backups:
+                target = root / rel
+                if target.is_symlink() or target.is_file():
+                    target.unlink()
+                if not target.exists():
+                    shutil.copy2(backups[rel], target)
+    if missing_fresh:
+        parser.error("the command did not write fresh non-empty evidence; assertion file not rewritten by this run: " + ", ".join(sorted(missing_fresh)))
     finished_at = utc_now()
 
     changed_under_run = sorted(
@@ -391,20 +473,9 @@ def main() -> int:
         inputs.append(record)
     untouched = [
         rel for rel, before in mtimes_before.items()
-        if before is not None and mtime_of(root, rel) == before
+        if rel not in fresh_paths and before is not None and mtime_of(root, rel) == before
     ]
     if untouched:
-        claim_paths = {
-            relative(root, spec.split(":", 1)[0])
-            for spec in declared_outputs
-            if split_role(spec, OUTPUT_ROLES, "diagnostic_output")[1] == "claim_bearing_output"
-        }
-        stale_claims = sorted(set(untouched) & claim_paths)
-        if stale_claims:
-            parser.error(
-                "the command exited but did not write: " + ", ".join(stale_claims)
-                + f" -- refusing to record a leftover file as this run's evidence (logs kept in {run_dir.relative_to(root)})"
-            )
         print("declared output was not rewritten by this run: " + ", ".join(sorted(untouched)), file=sys.stderr)
 
     # Source and outputs are frozen: a rerun would otherwise overwrite exactly the
@@ -418,6 +489,8 @@ def main() -> int:
         record = file_record(root, freeze(root, run_dir, rel, "outputs"), role)
         # Recorded so a reviewer can see what the produced-by-this-run decision rested on.
         record["preexisting"] = mtimes_before.get(rel) is not None
+        if rel in fresh_paths:
+            record["generation_check"] = "absent_before_execution_nonempty_after"
         outputs.append(record)
     if not outputs:
         # Every run produces at least its own log; recording it keeps a zero-flag
@@ -447,21 +520,22 @@ def main() -> int:
             "selected_language": language,
             "selection_rationale": args.rationale or previous.get("implementation", {}).get("selection_rationale") or f"recorded by record_run.py from the executed {language} command",
             "entry_point": frozen_entry_point,
-            "runtime": runtime_label(language, command),
+            "runtime": observed_runtime,
             "dependencies": args.dependency or [str(value) for value in previous.get("implementation", {}).get("dependencies", [])],
-            "matlab_toolboxes": args.toolbox,
+            "matlab_toolboxes": args.toolbox if args.toolbox is not None else previous.get("implementation", {}).get("matlab_toolboxes", []),
+            "metadata_provenance": {"dependencies": "declared", "matlab_toolboxes": "declared"},
             "fallback_from": None,
             "source_snapshot": tree_snapshot(root, frozen_sources, entrypoint=frozen_entry_point),
         },
         "inputs": inputs,
         "outputs": outputs,
         "environment": {"platform": platform.platform(), "python": platform.python_version()},
-        "seeds": parse_seeds(args.seed),
+        "seeds": parse_seeds(args.seed) if args.seed is not None else [dict(seed, source="declared") for seed in previous.get("seeds", [])],
         "stdout_path": stdout_path.relative_to(root).as_posix(),
         "stderr_path": stderr_path.relative_to(root).as_posix(),
         # Assertions are verdicts about THIS execution. Inheriting a parent's `pass`
         # would hand formal verification evidence that was never produced.
-        "assertions": parse_assertions(args.assertions, args.assert_file, root, assert_file_mtime_before),
+        "assertions": parse_assertions(args.assertions, assert_file_rel, root),
         "parent_run_id": args.rerun or None,
     }
     destination = run_dir / "RUN_MANIFEST.json"

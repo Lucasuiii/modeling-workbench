@@ -223,11 +223,15 @@
             "type": "string",
             "minLength": 1
           },
-          "value": {}
+          "value": {},
+          "source": {
+            "const": "declared",
+            "description": "Caller metadata; not proof that the model used this seed. Missing on older records also means unverified."
+          }
         },
         "additionalProperties": true
       },
-      "description": "Seeds a stochastic run was given; recorded so a simulation can be reproduced."
+      "description": "Caller-declared seed metadata only; no assertion that the program received or used it. Reruns inherit declarations, not observed RNG state."
     }
   },
   "$defs": {

@@ -316,6 +316,15 @@ Keep the checkout in place; rebuild the link if it moves. For a standalone insta
 
 Both agents read the same stage rules. Resolve absolute script paths from the actual Skill directory; scripts locate schemas and assets through `Path(__file__)`. Entry tests verify the router link, script startup from a relocated complete Skill, and matching metadata.
 
+### Computation provenance boundaries
+
+- Entry points must come from a recognized direct Python script or MATLAB `run('path.m')` invocation. `--source` declares snapshot coverage, not execution.
+- Previous claim outputs and assertion files are backed up and moved aside before execution. Touching a path cannot reuse old bytes; identical recomputation remains valid.
+- Formal handoffs and review packages verify actual input/output SHA256. Multiple successful rerun branches require an explicit choice, never a newest-child guess.
+- Python runtime comes from a pre-execution probe of the model interpreter. Seeds, dependencies and toolboxes are declarations, not evidence of use. Reruns retain seed/toolbox declarations but never inherit assertions.
+
+See the [computation guide](.agents/skills/cumcm-workflow/references/04-computation.md) for invocation limits. Historical records are not rewritten or retroactively certified.
+
 ## 11. Development
 
 ```bash

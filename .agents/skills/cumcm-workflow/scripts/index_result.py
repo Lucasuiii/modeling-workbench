@@ -69,9 +69,8 @@ def successful_official(manifest: dict[str, Any]) -> bool:
 def newest_descendant(runs: dict[str, dict[str, Any]], run_id: str) -> str:
     """Walk parent links forward through successful official runs only.
 
-    A failed or exploratory rerun replaces nothing, and a parent can have several
-    children, so the successor is the newest qualifying one rather than whichever
-    happened to be seen last.
+    A failed or exploratory rerun replaces nothing. Multiple successful official
+    children are ambiguous; the caller must choose a branch explicitly.
     """
     children: dict[str, list[str]] = {}
     for rid, manifest in runs.items():

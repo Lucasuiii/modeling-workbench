@@ -617,7 +617,7 @@ class MachineDerivedEvidenceTests(unittest.TestCase):
                                   "--", sys.executable, "code/solve.py")
             self.assertEqual(recorded.returncode, 0, recorded.stdout + recorded.stderr)
             manifest = json.loads((project / "runs" / "RUN-SEED" / "RUN_MANIFEST.json").read_text(encoding="utf-8"))
-            self.assertEqual(manifest["seeds"], [{"name": "seed", "value": "42"}, {"name": "bootstrap", "value": "7"}])
+            self.assertEqual(manifest["seeds"], [{"name": "seed", "value": "42", "source": "declared"}, {"name": "bootstrap", "value": "7", "source": "declared"}])
 
 
 class CandidateSelectionTests(unittest.TestCase):

@@ -12,7 +12,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from provenance import snapshot_matches
+from provenance import snapshot_matches, sha256_file
 
 
 def read_object(path: Path) -> dict[str, Any]:
@@ -72,6 +72,28 @@ def resolve_official_computation(project: Path, results: dict[str, Any] | None =
         snapshot = implementation.get("source_snapshot")
         if not snapshot_matches(project, snapshot):
             raise ValueError(f"formal result references an official run with a missing or stale source snapshot: {run_id}")
+
+        # All formal files matter, including inputs not directly used by a locator.
+        for collection, role in (("inputs", "formal_input"), ("outputs", "claim_bearing_output")):
+            entries = run.get(collection, [])
+            if not isinstance(entries, list):
+                raise ValueError(f"invalid {collection} in official run {run_id}")
+            for entry in entries:
+                if not isinstance(entry, dict):
+                    raise ValueError(f"invalid file record in official run {run_id}")
+                if entry.get("evidence_role") != role:
+                    continue
+                rel = entry.get("path")
+                if not isinstance(rel, str) or not rel or Path(rel).is_absolute():
+                    raise ValueError(f"formal file integrity: invalid path in {run_id}")
+                target = (project / rel).resolve()
+                try:
+                    target.relative_to(project)
+                    valid = target.is_file() and sha256_file(target) == entry.get("sha256")
+                except (ValueError, OSError):
+                    valid = False
+                if not valid:
+                    raise ValueError(f"formal file SHA256 integrity failure in {run_id}: {rel}")
 
         output_roles = {
             str(entry.get("path")): entry.get("evidence_role")

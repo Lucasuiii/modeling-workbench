@@ -268,7 +268,7 @@ ERROR RUN-E020  the working tree no longer matches this official run: code/solve
 
 还有两条记录期的硬规则，都是防伪造：
 
-- **不能冒领输出**。执行前后比对每个 declared output 的 mtime。一个 exit 0 却没写文件的程序，否则会把上一轮的结果连同真哈希一起冻结成自己的 claim 证据——真哈希、假出处。这种情况 `record_run.py` 直接拒绝写 manifest 并指出是哪个文件。
+- **不能冒领输出**。claim 输出与断言文件运行前先备份移开，运行后必须重新生成非空常规文件；仅 touch 不再能继承旧内容。缺失或空文件会被拒绝，并在有备份时恢复旧文件。
 - **不能继承判决**。`--rerun` 永不继承父运行的 assertions。新代码没有被旧的 `pass` 验证过，继承它等于凭空给 `MODEL-E009`（冻结模型必须有已执行的验证）喂证据。
 - **手打的判决不算已验证**。`--assert x=pass` 记为 `declared`（调用者备注），`--assert-file` 读程序自己写出的判决、记为 `recorded`。只有 `recorded` 能满足冻结模型的 `verification_plan`；official run 全是手打断言时报 `RUN-W003`。
 - **证据不能在脚下移动**。声明的源码和 formal input 在执行前取哈希、执行后复核——冻结发生在命令退出之后，运行中被改过的文件会被冻结成"运行从未读过的东西"。
@@ -491,6 +491,15 @@ ln -s "$PWD/.agents/skills/cumcm-workflow" ~/.claude/skills/cumcm-workflow
 两端读取同一套阶段规则。脚本路径从实际 Skill 目录取得绝对路径；脚本通过 `Path(__file__)` 定位 schema 和 assets。入口测试验证路由链接、完整 Skill 在异地目录的脚本启动及元数据一致性。
 
 ---
+
+### 计算记录的证据边界
+
+- 执行入口必须来自可识别的直接 Python 脚本或 MATLAB `run('path.m')` 调用；`--source` 只声明快照范围，不能冒充执行入口。
+- 旧 claim 输出与断言文件先备份移开，再要求本次重新生成；仅 touch 无法冒领旧结果，重算相同字节仍可接受。
+- 正式交接与独立复核包统一检查输入、输出实际 SHA256。重跑出现多个成功分支时须明确选择，不自动选最新。
+- Python runtime 来自模型解释器的运行前探测；seed、依赖与 toolbox 是声明，不能证明程序实际使用。rerun 保留 seed/toolbox 声明，不继承断言。
+
+详情与调用限制见[计算指南](.agents/skills/cumcm-workflow/references/04-computation.md)。历史记录不会被自动改写或升级为已验证。
 
 ## 13. 开发
 
