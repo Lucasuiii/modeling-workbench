@@ -28,7 +28,8 @@
 请下载或复用 https://github.com/Lucasuiii/modeling-workbench 到独立工具目录，
 先检查已有仓库，不覆盖本地改动。完整读取仓库中的
 .agents/skills/cumcm-workflow/SKILL.md，按说明检查 Python 3.10+、
-Python 依赖、MATLAB 或 Python 计算后端、XeLaTeX 和 PDF 渲染工具。
+Python 依赖、MATLAB 或 Python 计算后端、XeLaTeX 和 PDF 渲染工具；
+先运行 Skill 中的 scripts/doctor.py，说明哪些阶段可用、哪些依赖缺失。
 需要安装或修改环境时，先列出变更并等我同意。
 本次只准备环境，不初始化赛题；完成后报告工具目录、版本和缺失项。
 ```
@@ -51,6 +52,22 @@ Python 依赖、MATLAB 或 Python 计算后端、XeLaTeX 和 PDF 渲染工具。
 ```
 
 **接下来你只需跟随阶段提示审阅材料。** 同一环境再次使用时可直接从第二步开始。中断后，提供项目输出目录并说“继续 cumcm-workflow”；已有项目应恢复，不要重新初始化。
+
+你也可以随时说“检查环境”或“这个项目现在做到哪了”。agent 会调用环境体检或项目状态工具，报告缺失依赖、证据问题和待确认事项；工具不会自动安装软件、修改项目或替你确认。
+
+<details>
+<summary>高级使用：手动查看环境和项目状态</summary>
+
+`S` 为工作流工具目录下 `.agents/skills/cumcm-workflow/scripts` 的绝对路径：
+
+```bash
+python3 "$S/doctor.py"
+python3 "$S/project_status.py" --project /绝对路径/已有项目
+```
+
+加 `--json` 可查看完整结构化结果。环境体检按阶段报告缺失项，缺 LaTeX 不妨碍先建模；状态检查截至当前阶段，并区分检查结果与行动关卡。退出码为 0 仍可能需要人工确认。详见[诊断工具说明](.agents/skills/cumcm-workflow/references/diagnostics.md)。
+
+</details>
 
 <details>
 <summary>路径、Windows 和环境问题</summary>

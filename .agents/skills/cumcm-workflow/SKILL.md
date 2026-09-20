@@ -29,6 +29,10 @@ For paper initialization, pass the actual `--competition` and `--language zh|en`
 4. Define `S` as the **absolute path** to this Skill's `scripts` directory. All examples use `python3 "$S/<command>.py"`; the contest workspace does not contain these scripts.
 5. After interruption, check pending human decisions before continuing. Existing downstream files do not establish approval. Never infer approval from a quota reset, a new task, or “continue”.
 
+## Setup and progress diagnostics
+
+On first setup or an environment change, run `python3 "$S/doctor.py"`; on resumption or a progress question, run `python3 "$S/project_status.py" --project <p>`. Both print reports without changing project state. Summarize what is usable, what blocks the next action, and the next step; continue authorized work instead of adding a confirmation point. Missing paper tools do not block modeling. A ready preflight is not approval: read the separately reported checkpoint availability. Use [diagnostics](references/diagnostics.md) for probe depth, JSON output, optional model dependencies and exit codes. Do not run diagnostics on every reply or reinstall an already prepared environment.
+
 ## Three human stops
 
 | Before | Show the user | Record after their explicit reply |

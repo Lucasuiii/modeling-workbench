@@ -29,7 +29,8 @@ Download or reuse https://github.com/Lucasuiii/modeling-workbench in a separate
 tools directory. Inspect existing checkouts first; do not overwrite local changes.
 Read the complete .agents/skills/cumcm-workflow/SKILL.md in the repository.
 Follow it to check Python 3.10+, Python dependencies, a MATLAB or Python
-computation backend, XeLaTeX and PDF rendering tools.
+computation backend, XeLaTeX and PDF rendering tools. First run the Skill’s
+scripts/doctor.py and explain which stages are usable and what is missing.
 List proposed installations or environment changes and wait for my approval.
 Only prepare the environment; do not initialize a contest project yet.
 Report the tools directory, versions and any missing requirements when finished.
@@ -55,6 +56,22 @@ conclusions before paper writing, and final delivery.
 ```
 
 **Follow the stage prompts to review the work.** Reuse the prepared environment by starting at step 2 for another problem. To resume interrupted work, provide the project output directory and ask to “resume cumcm-workflow”; resume an existing project instead of initializing it again.
+
+You can also ask “check my environment” or “where is this project now?”. The agent uses environment or project diagnostics to report missing dependencies, evidence issues and pending decisions. These tools do not install software, change project state or approve work for you.
+
+<details>
+<summary>Advanced: run environment and project diagnostics manually</summary>
+
+Set `S` to the absolute path of `.agents/skills/cumcm-workflow/scripts` in the tools checkout:
+
+```bash
+python3 "$S/doctor.py"
+python3 "$S/project_status.py" --project /absolute/path/to/existing-project
+```
+
+Add `--json` for the full structured report. Environment checks are stage-specific: missing LaTeX does not prevent modeling. Project checks stop at the current stage and report checker results separately from action checkpoints. Exit code 0 can still mean human confirmation is pending. See [diagnostic tools](.agents/skills/cumcm-workflow/references/diagnostics.md).
+
+</details>
 
 <details>
 <summary>Paths, Windows and environment troubleshooting</summary>
