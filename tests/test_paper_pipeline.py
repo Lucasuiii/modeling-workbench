@@ -14,7 +14,7 @@ SCRIPTS = ROOT / ".agents" / "skills" / "cumcm-workflow" / "scripts"
 sys.path.insert(0, str(SCRIPTS))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from test_workflow_core import build_valid_project, envelope, review, write_json  # noqa: E402
+from workflow_fixtures import build_valid_project, envelope, review, write_json  # noqa: E402
 from init_latex_paper import initialize as initialize_latex  # noqa: E402
 from build_handoff import build as build_handoff  # noqa: E402
 from provenance import digest_records, tree_snapshot  # noqa: E402

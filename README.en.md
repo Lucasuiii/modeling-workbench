@@ -333,7 +333,7 @@ python3 -m unittest discover -s tests -p 'test_*.py' -v
 python3 -m compileall -q .agents/skills/cumcm-workflow/scripts tests
 ```
 
-CI runs the contract tests on Python 3.10 and 3.13. `tests/test_recorders.py` exercises the recorder chain with real execution and a real `xelatex` compile, skipping when the engine or the ctex class is absent.
+CI runs the full suite in two environments: Python 3.10, and Python 3.13 with TeX Live/Poppler for real compilation. There is no additional duplicate 3.13 job. Shared fixtures live in `tests/workflow_fixtures.py` and `tests/recorder_fixtures.py`; all regression cases are retained. Tool-dependent tests skip locally when their tools are absent.
 
 ## 12. Limits and licence
 

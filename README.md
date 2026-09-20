@@ -517,7 +517,7 @@ python3 -m unittest discover -s tests -p 'test_*.py' -v
 python3 -m compileall -q .agents/skills/cumcm-workflow/scripts tests
 ```
 
-CI 在 Python 3.10 与 3.13 上跑契约测试；另有一个装了 texlive 的 job 用**真实 xelatex 编译**跑通 recorder 链路。
+CI 分两路运行完整测试：Python 3.10 基础环境，以及 Python 3.13＋TeX Live/Poppler 环境；后者包含**真实 XeLaTeX 编译**，不再另跑重复的 3.13 作业。共用 fixture 位于 `tests/workflow_fixtures.py` 与 `tests/recorder_fixtures.py`，回归用例仍全部保留。
 
 不向下兼容：v0.6 拒绝任何 `schema_version` 不是 `0.6.0` 的契约，仓库里也不再保留迁移脚本。旧工作区请用官方文件重新初始化。
 

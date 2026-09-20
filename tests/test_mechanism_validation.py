@@ -19,8 +19,8 @@ sys.path.insert(0, str(SKILL / "scripts"))
 
 import build_independent_review_package as builder
 from provenance import sha256_file
-from test_recorders import make_project, run_script
-from test_workflow_core import build_valid_project, write_accepted_snapshot
+from recorder_fixtures import make_project, run_script
+from workflow_fixtures import build_valid_project, write_accepted_snapshot
 from workflow_checks import check_independent_review_package, check_independent_review_result, check_project
 
 

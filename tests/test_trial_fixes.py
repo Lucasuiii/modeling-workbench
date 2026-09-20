@@ -7,8 +7,8 @@ import unittest
 import zipfile
 from pathlib import Path
 
-from test_recorders import make_project, run_script, write_json, SCRIPTS
-from test_workflow_core import build_valid_project, write_accepted_snapshot
+from recorder_fixtures import make_project, run_script, write_json, SCRIPTS
+from workflow_fixtures import build_valid_project, write_accepted_snapshot
 from workflow_checks import check_project, check_delivery, check_model_verification, require_human_checkpoint
 from delivery_archives import build_archives, check_archives
 from build_handoff import build as build_handoff

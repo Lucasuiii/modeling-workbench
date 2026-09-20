@@ -8,7 +8,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from test_workflow_core import SCRIPTS, build_valid_project, write_json
+from workflow_fixtures import SCRIPTS, build_valid_project, write_json
 from workflow_checks import check_project
 import doctor
 from project_status import inspect_project

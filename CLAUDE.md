@@ -36,7 +36,7 @@ python3 -m unittest discover -s tests -p 'test_*.py' -v
 python3 -m compileall -q .agents/skills/cumcm-workflow/scripts tests
 ```
 
-`tests/test_recorders.py` runs real subprocesses and a real `xelatex` compile; it skips the CJK case when the `ctex` class is not installed. Every other test file works on synthetic fixtures.
+`tests/workflow_fixtures.py` holds synthetic contracts/approvals; `tests/recorder_fixtures.py` holds shared real-recorder setup. Import these helpers rather than another test class. Test files retain their regression cases; recorder, compile, and cross-competition tests may execute real subprocesses and LaTeX. Tool-dependent cases skip when tools are absent. CI runs the full suite on Python 3.10 and once on Python 3.13 with XeLaTeX/CTeX/Poppler installed; there is no duplicate Python 3.13 job.
 
 When you add a rule ID, test its failing and passing cases. Completeness checks warn in `working`; human checkpoints still block dependent actions and `enforce` in both modes. Test that `preflight` reports pending review without blocking exploration.
 

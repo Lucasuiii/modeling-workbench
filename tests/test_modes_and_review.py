@@ -19,7 +19,7 @@ from build_independent_review_package import build as build_review_package
 from init_latex_paper import commit_staged_tree
 from paper_visible_text_check import inspect_text
 from test_paper_pipeline import build_paper_ready_project
-from test_workflow_core import build_valid_project, write_json
+from workflow_fixtures import build_valid_project, write_json
 from canonical_evidence import resolve_official_computation
 from workflow_checks import check_project
 from plan_redo import build_plan

@@ -7,7 +7,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from test_recorders import make_project, write_json, envelope, run_script, MINIMAL_TEX
+from recorder_fixtures import make_project, write_json, envelope, run_script, MINIMAL_TEX
 from test_paper_pipeline import build_paper_ready_project
 from plan_redo import build_plan
 from provenance import sha256_file

@@ -6,7 +6,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from test_recorders import make_project, run_script
+from recorder_fixtures import make_project, run_script
 import record_run
 from record_run import infer_language
 

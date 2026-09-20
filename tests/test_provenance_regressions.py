@@ -7,9 +7,9 @@ import tempfile
 import unittest
 import venv
 
-from test_recorders import make_project, run_script
-import test_recorders
-from test_workflow_core import build_valid_project
+from recorder_fixtures import make_project, run_script
+from recorder_fixtures import record_official
+from workflow_fixtures import build_valid_project
 from canonical_evidence import resolve_official_computation
 from record_run import infer_entry_point, runtime_label
 from index_result import newest_descendant
@@ -67,7 +67,7 @@ class ProvenanceRegressions(unittest.TestCase):
     def test_touch_output_and_assertions_rejected_old_bytes_preserved(self):
         for kind in ('output','assertion'):
             with self.subTest(kind=kind),tempfile.TemporaryDirectory() as d:
-                p=make_project(Path(d));test_recorders.RecorderTests.record_official(self,p)
+                p=make_project(Path(d));record_official(p)
                 target='results/q1_output.json' if kind=='output' else 'results/assertions.json'
                 old=(p/target).read_bytes()
                 code='from pathlib import Path\nPath('+repr(target)+').touch()\n'
@@ -82,7 +82,7 @@ class ProvenanceRegressions(unittest.TestCase):
 
     def test_timeout_restores_old_outputs(self):
         with tempfile.TemporaryDirectory() as d:
-            p=make_project(Path(d));test_recorders.RecorderTests.record_official(self,p)
+            p=make_project(Path(d));record_official(p)
             old=(p/'results/q1_output.json').read_bytes()
             (p/'code/sleep.py').write_text('import time; time.sleep(3)')
             done=run_script('record_run.py','--project',str(p),'--run-id','TIMEOUT','--timeout','0.1','--output','results/q1_output.json:claim','--',sys.executable,'code/sleep.py')
@@ -109,7 +109,7 @@ class ProvenanceRegressions(unittest.TestCase):
 
     def test_identical_recomputation_allowed(self):
         with tempfile.TemporaryDirectory() as d:
-            p=make_project(Path(d));test_recorders.RecorderTests.record_official(self,p)
+            p=make_project(Path(d));record_official(p)
             old=(p/'results/q1_output.json').read_bytes()
             done=run_script('record_run.py','--project',str(p),'--rerun','RUN-Q1-001','--official','--assert-file','results/assertions.json')
             self.assertEqual(done.returncode,0,done.stdout+done.stderr)

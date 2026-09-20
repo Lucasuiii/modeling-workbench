@@ -4,8 +4,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from test_recorders import make_project, run_script, write_json
-from test_workflow_core import write_accepted_snapshot
+from recorder_fixtures import make_project, run_script, write_json
+from workflow_fixtures import write_accepted_snapshot
 from workflow_checks import require_human_checkpoint
 from build_handoff import build
 

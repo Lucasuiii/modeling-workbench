@@ -14,7 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from init_latex_paper import initialize  # noqa: E402
 from test_paper_pipeline import build_paper_ready_project  # noqa: E402
-from test_workflow_core import envelope, write_json, write_accepted_snapshot  # noqa: E402
+from workflow_fixtures import envelope, write_json, write_accepted_snapshot  # noqa: E402
 from workflow_checks import check_latex_template, check_project  # noqa: E402
 
 

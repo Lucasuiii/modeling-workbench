@@ -20,8 +20,8 @@ sys.path.insert(0, str(ROOT / ".agents/skills/cumcm-workflow/scripts"))
 from init_latex_paper import initialize
 from test_latex_template import build_inputs
 from test_paper_pipeline import build_paper_ready_project
-from test_recorders import run_script
-from test_workflow_core import write_json
+from recorder_fixtures import run_script
+from workflow_fixtures import write_json
 from workflow_checks import check_project, check_schema
 from delivery_archives import build_archives, check_archives
 from provenance import snapshot_matches

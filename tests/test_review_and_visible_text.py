@@ -8,7 +8,7 @@ from pathlib import Path
 
 
 from test_paper_pipeline import build_paper_ready_project
-from test_workflow_core import build_valid_project, write_json
+from workflow_fixtures import build_valid_project, write_json
 
 from build_independent_review_package import build as build_review_package
 from paper_visible_text_check import inspect_text
