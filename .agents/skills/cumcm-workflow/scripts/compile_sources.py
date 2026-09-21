@@ -14,7 +14,7 @@ def runtime_roots() -> list[Path]:
         roots.append(Path(os.environ['WINDIR']) / 'Fonts')
     kpsewhich = shutil.which('kpsewhich')
     if kpsewhich:
-        for var in ('TEXMFROOT', 'TEXMFDIST', 'TEXMFDEBIAN', 'TEXMFLOCAL', 'TEXMFSYSVAR', 'TEXMFSYSCONFIG', 'TEXMFVAR'):
+        for var in ('TEXMFROOT', 'TEXMFDIST', 'TEXMFDEBIAN', 'TEXMFLOCAL', 'TEXMFSYSVAR', 'TEXMFSYSCONFIG', 'TEXMFVAR', 'TEXMFHOME'):
             result = subprocess.run([kpsewhich, '-var-value=' + var], capture_output=True, text=True, check=False, timeout=30)
             value = result.stdout.strip()
             if result.returncode == 0 and value and Path(value).is_absolute():

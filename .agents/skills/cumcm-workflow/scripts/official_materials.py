@@ -9,6 +9,11 @@ from typing import Any, Iterable
 
 TEMPLATE_ROLES = {
     "paper_template",
+    "format_template",
+    "paper_format_template",
+    "official_submission_template",
+    "论文格式模板",
+    "格式模板",
     "official_paper_template",
     "latex_template",
     "word_template",
@@ -61,11 +66,7 @@ def classify_official_material(source: dict[str, Any]) -> str | None:
     roles = declared_roles(source)
     if roles & {normalize_role(value) for value in TEMPLATE_ROLES}:
         return "paper_template"
-    if any("template" in role or "模板" in role for role in roles):
-        return "paper_template"
     if roles & {normalize_role(value) for value in RULE_ROLES}:
-        return "format_or_submission_rule"
-    if any(any(token in role for token in ("format", "rule", "格式", "规则")) for role in roles):
         return "format_or_submission_rule"
 
     # A filename hint is useful for routing, but is not strong enough to make a

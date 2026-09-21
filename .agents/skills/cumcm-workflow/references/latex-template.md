@@ -48,3 +48,5 @@ python3 "$S/record_compile.py" --project <p> --update-quality
 ```
 
 With `--update-quality` it refreshes the machine fields of `PAPER_QUALITY_REPORT.layout_report` — page count, rendered pages, checks, bound artifact. The report carries no decision of its own; the single approval before submission is `DELIVERY_MANIFEST.final_check`, and the pages rendered here are what it must present. Then actually look at the rendered pages: equations, tables, captions, figure placement, page density, whitespace, fonts and cross-page continuity are human QA, not a machine score.
+
+The initializer records each planned `section_id` and its generated TeX path in `LATEX_TEMPLATE_MANIFEST.section_paths`, including sections with no subproblem IDs. Preserve this mapping when adapting or moving sections. Redo planning uses it for claim dependencies; an unmapped claim-only section conservatively invalidates all declared sections.

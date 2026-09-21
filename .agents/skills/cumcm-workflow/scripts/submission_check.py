@@ -108,10 +108,10 @@ def inspect_submission(root: Path, delivery: dict) -> tuple[dict, list[str]]:
     # XMP and the document information dictionary are both outside the cover.
     metadata = info + run_tool(["pdfinfo", "-meta", str(pdf)])
     for token in tokens:
-        if compact(token) in compact(metadata):
+        if compact(token).casefold() in compact(metadata).casefold():
             errors.append("identity information found in PDF metadata")
         for number, page in enumerate(pages[cover:], cover + 1):
-            if compact(token) in compact(page):
+            if compact(token).casefold() in compact(page).casefold():
                 errors.append(f"identity information found outside the cover on page {number}")
     abstract = rules["abstract"]
     maximum = positive(abstract["max_pages"], "abstract.max_pages")

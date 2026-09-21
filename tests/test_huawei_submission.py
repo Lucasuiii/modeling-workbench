@@ -70,6 +70,17 @@ class SubmissionTests(unittest.TestCase):
         self.meta = '<author>Team 999</author>'
         self.assertTrue(any('metadata' in e for e in check_submission(self.root, self.data)))
 
+    def test_identity_casefold_in_body_and_metadata(self):
+        self.data['submission']['rules']['identity_tokens'].append('Straße')
+        for token in ('UNIVERSITY XYZ', 'university xyz', 'STRASSE'):
+            with self.subTest(token=token):
+                self.pages[-1] = '1 Introduction\n' + token
+                self.assertTrue(any('outside the cover' in e for e in check_submission(self.root, self.data)))
+                self.pages[-1] = '1 Introduction\nBody'
+                self.meta = '<author>' + token + '</author>'
+                self.assertTrue(any('metadata' in e for e in check_submission(self.root, self.data)))
+                self.meta = ''
+
     def test_md5_is_measured_and_pdf_rules_or_config_changes_invalidate(self):
         import hashlib
         observed = self.record()

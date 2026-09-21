@@ -17,6 +17,17 @@
     "main_path": {"type": "string", "minLength": 1},
     "metadata_path": {"type": "string", "minLength": 1},
     "section_files": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "section_paths": {
+      "type": "array", "uniqueItems": true,
+      "items": {
+        "type": "object", "required": ["section_id", "path"],
+        "properties": {
+          "section_id": {"type": "string", "minLength": 1},
+          "path": {"type": "string", "minLength": 1}
+        },
+        "additionalProperties": false
+      }
+    },
     "subproblem_sections": {
       "type": "array",
       "minItems": 1,

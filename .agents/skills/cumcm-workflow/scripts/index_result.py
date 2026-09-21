@@ -38,18 +38,11 @@ def read_object(path: Path) -> dict[str, Any]:
 
 
 def resolve_pointer(data: Any, pointer: str) -> Any:
-    if pointer in {"", "/"}:
-        return data
-    current = data
-    for raw in pointer.lstrip("/").split("/"):
-        token = raw.replace("~1", "/").replace("~0", "~")
-        if isinstance(current, dict) and token in current:
-            current = current[token]
-        elif isinstance(current, list) and token.isdigit() and int(token) < len(current):
-            current = current[int(token)]
-        else:
-            raise SystemExit(f"JSON pointer does not resolve: {pointer}")
-    return current
+    from json_pointer import resolve_json_pointer
+    value, found = resolve_json_pointer(data, pointer)
+    if not found:
+        raise SystemExit(f"JSON pointer does not resolve: {pointer}")
+    return value
 
 
 def all_runs(root: Path) -> dict[str, dict[str, Any]]:

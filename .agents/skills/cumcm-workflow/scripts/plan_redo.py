@@ -283,16 +283,30 @@ def build_plan(root: Path, changed: list[str]) -> dict[str, Any]:
     for item in as_list(latex.get("subproblem_sections")):
         if isinstance(item, dict):
             section_files.setdefault(str(item.get("subproblem_id")), set()).add(str(item.get("path")))
+    section_paths: dict[str, set[str]] = {}
+    for item in as_list(latex.get("section_paths")):
+        if isinstance(item, dict):
+            section_paths.setdefault(str(item.get("section_id")), set()).add(str(item.get("path")))
+    all_sections = set(as_list(latex.get("section_files"))) | set().union(*section_files.values(), set())
     stale_sections: set[str] = set()
+    incomplete = False
     for section in as_list(plan.get("paper_structure")):
         if not isinstance(section, dict):
             continue
         if {str(value) for value in as_list(section.get("claim_ids"))} & stale_claims:
-            for subproblem in as_list(section.get("subproblem_ids")):
-                if str(subproblem) in section_files:
-                    stale_sections.update(section_files[str(subproblem)])
-    if stale_claims and not stale_sections:
-        stale_sections.update(set().union(*section_files.values(), set()))
+            paths = section_paths.get(str(section.get("section_id")), set())
+            if len(paths) == 1 and paths.issubset(all_sections):
+                stale_sections.update(paths)
+            else:
+                subproblems = as_list(section.get("subproblem_ids"))
+                if not paths and subproblems and all(str(s) in section_files for s in subproblems):
+                    stale_sections.update(set().union(*(section_files[str(s)] for s in subproblems)))
+                else:
+                    # No trustworthy edge for this section: include all declared
+                    # sections, even when another stale section was mapped.
+                    incomplete = True
+    if stale_claims and (incomplete or not stale_sections):
+        stale_sections.update(all_sections)
     changed_tex = sorted(path for path in changed_set if path.endswith((".tex", ".bib")))
     for path in changed_tex:
         stale_sections.add(path)
@@ -300,7 +314,7 @@ def build_plan(root: Path, changed: list[str]) -> dict[str, Any]:
         actions["paper"].append(f"rewrite or re-review: {', '.join(sorted(stale_sections))}")
     elif stale_claims:
         actions["paper"].append("rewrite or re-review all paper sections whose dependency mapping is incomplete")
-    untouched_sections = sorted(set().union(*section_files.values(), set()) - stale_sections)
+    untouched_sections = sorted(all_sections - stale_sections)
     if untouched_sections:
         unaffected["paper"].extend(untouched_sections)
 

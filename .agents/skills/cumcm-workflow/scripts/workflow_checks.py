@@ -13,6 +13,8 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Iterable
 
+from json_pointer import resolve_json_pointer
+
 from jsonschema import Draft202012Validator
 from referencing import Registry, Resource
 
@@ -1094,19 +1096,6 @@ def check_run(data: Any, root: Path, rel_path: str, capability_ids: set[str], su
     return findings
 
 
-def resolve_json_pointer(data: Any, pointer: str) -> tuple[Any, bool]:
-    if pointer in {"", "/"}:
-        return data, True
-    current = data
-    for raw in pointer.lstrip("/").split("/"):
-        token = raw.replace("~1", "/").replace("~0", "~")
-        if isinstance(current, dict) and token in current:
-            current = current[token]
-        elif isinstance(current, list) and token.isdigit() and int(token) < len(current):
-            current = current[int(token)]
-        else:
-            return None, False
-    return current, True
 
 
 def check_results(

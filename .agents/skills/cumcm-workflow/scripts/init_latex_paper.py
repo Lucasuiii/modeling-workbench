@@ -214,6 +214,7 @@ def initialize(
 
     structure = [item for item in plan["paper_structure"] if isinstance(item, dict)]
     subproblem_records: list[dict[str, str]] = []
+    section_paths: list[dict[str, str]] = []
     section_inputs: list[str] = []
     chosen_title = validate_title(title)
     chosen_keywords = validate_keywords(keywords)
@@ -249,6 +250,7 @@ def initialize(
                 },
             )
             (sections / filename).write_text(content, encoding="utf-8")
+            section_paths.append({"section_id": section_id, "path": rel})
             for subproblem_id in subproblem_ids:
                 subproblem_records.append({"subproblem_id": subproblem_id, "path": rel})
             section_inputs.append(f"\\input{{sections/{filename[:-4]}}}")
@@ -297,6 +299,7 @@ def initialize(
             "metadata_path": "paper/metadata.tex",
             "section_files": section_files,
             "subproblem_sections": subproblem_records,
+            "section_paths": section_paths,
             "required_files": required_files,
             "placeholder_markers": ["CUMCM-TODO", "\\placeholder{"],
             "template_source": f"repo_asset:{template_meta['template_id']}@{template_meta['template_version']}",
