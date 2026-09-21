@@ -197,6 +197,121 @@
         }
       },
       "additionalProperties": false
+    },
+    "submission": {
+      "type": "object",
+      "required": [
+        "rules"
+      ],
+      "properties": {
+        "rules": {
+          "type": "object",
+          "required": [
+            "sources",
+            "pdf_name",
+            "cover_pages",
+            "identity_tokens",
+            "abstract",
+            "attachments"
+          ],
+          "properties": {
+            "sources": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "pdf_name": {
+              "type": "string",
+              "minLength": 1
+            },
+            "cover_pages": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "identity_tokens": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "abstract": {
+              "type": "object",
+              "required": [
+                "start_marker",
+                "body_marker",
+                "max_pages"
+              ],
+              "properties": {
+                "start_marker": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "body_marker": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "max_pages": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              },
+              "additionalProperties": false
+            },
+            "attachments": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "path",
+                  "name",
+                  "max_bytes",
+                  "formats"
+                ],
+                "properties": {
+                  "path": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "max_bytes": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "formats": {
+                    "type": "array",
+                    "minItems": 1,
+                    "uniqueItems": true,
+                    "items": {
+                      "enum": [
+                        "zip",
+                        "rar",
+                        "7z"
+                      ]
+                    }
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        "recorded": {
+          "type": "object",
+          "description": "Written by submission_check.py; checker recomputes and compares every measured field."
+        }
+      },
+      "additionalProperties": false
     }
   },
   "$defs": {

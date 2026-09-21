@@ -8,6 +8,7 @@ import json
 import os
 import re
 import shutil
+import subprocess
 import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
@@ -166,7 +167,7 @@ def commit_staged_tree(staging: Path, paper_dir: Path) -> None:
 
 def initialize(
     project: Path, title: str, competition_year: int, keywords: str,
-    *, competition: str = "CUMCM", language: str = "zh",
+    *, competition: str = "CUMCM", language: str = "zh", cover_pdf: str | None = None,
 ) -> Path:
     competition = competition.strip()
     if not competition or any(ord(char) < 32 for char in competition):
@@ -180,13 +181,32 @@ def initialize(
     template_root = skill_root / "assets" / "latex-template" / TEMPLATE_DIRS[language]
     template_meta = read_object(template_root / "template.json")
     template_sources = official_paper_template_sources(project)
-    if template_sources:
+    cover = None
+    if cover_pdf is not None:
+        cover = (project / cover_pdf).resolve()
+        if not cover.is_relative_to(project.resolve()) or not cover.is_file() or cover.suffix.lower() != ".pdf":
+            raise ValueError("cover PDF must be an existing project-local PDF")
+        if language != "zh" or not template_sources:
+            raise ValueError("cover adaptation requires Chinese output and a declared official paper template")
+        for source in template_sources:
+            target = (project / source).resolve()
+            if not target.is_relative_to(project.resolve()) or not target.is_file():
+                raise ValueError("declared official template must exist inside the project")
+        try:
+            info = subprocess.run(["pdfinfo", str(cover)], capture_output=True, text=True, check=True, timeout=30)
+        except (OSError, subprocess.SubprocessError) as exc:
+            raise ValueError(f"cannot inspect cover PDF: {exc}") from exc
+        if not re.search(r"^Pages:\s+1\s*$", info.stdout, re.MULTILINE):
+            raise ValueError("cover PDF must contain exactly one page")
+    if template_sources and cover is None:
         raise ValueError(
             "an official paper template is declared; adopt or adapt it before using the generic scaffold: "
             + ", ".join(template_sources)
         )
     paper_dir = project / "paper"
     protected_targets = [paper_dir / "main.tex", paper_dir / "metadata.tex", paper_dir / "macros.tex", paper_dir / "references.bib", paper_dir / "sections", paper_dir / "LATEX_TEMPLATE_MANIFEST.json"]
+    if cover is not None:
+        protected_targets.append(paper_dir / "official-cover.pdf")
     conflicts = [path for path in protected_targets if path.exists()]
     if conflicts:
         listed = ", ".join(path.relative_to(project).as_posix() for path in conflicts)
@@ -237,6 +257,12 @@ def initialize(
             (template_root / "main.tex.tmpl").read_text(encoding="utf-8"),
             {"PLANNED_SECTION_INPUTS": "\n".join(section_inputs)},
         )
+        if cover is not None:
+            shutil.copy2(cover, staging / "official-cover.pdf")
+            main_text = main_text.replace(r"\begin{document}",
+                "\\usepackage{pdfpages}\n\\begin{document}\n"
+                "\\includepdf[pages=1,pagecommand={}]{official-cover.pdf}\n"
+                "\\setcounter{page}{1}")
         metadata_text = render(
             (template_root / "metadata.tex.tmpl").read_text(encoding="utf-8"),
             {
@@ -251,6 +277,8 @@ def initialize(
 
         section_files = sorted(f"paper/sections/{path.name}" for path in sections.glob("*.tex"))
         required_files = ["paper/main.tex", "paper/metadata.tex", "paper/macros.tex", "paper/references.bib", *section_files]
+        if cover is not None:
+            required_files.append("paper/official-cover.pdf")
         manifest = {
             "schema_version": WORKFLOW_VERSION,
             "artifact_type": "latex_template_manifest",
@@ -259,12 +287,12 @@ def initialize(
             "producer": {"kind": "script", "name": "init_latex_paper.py", "version": WORKFLOW_VERSION},
             "template_id": template_meta["template_id"],
             "template_version": template_meta["template_version"],
-            "mode": template_meta["mode"],
+            "mode": "official_package_adapter" if cover is not None else template_meta["mode"],
             "engine": template_meta["engine"],
             "competition": competition,
             "competition_year": competition_year,
             "official_compliance": "unverified",
-            "official_template_source": None,
+            "official_template_source": template_sources[0] if cover is not None else None,
             "main_path": "paper/main.tex",
             "metadata_path": "paper/metadata.tex",
             "section_files": section_files,
@@ -288,13 +316,14 @@ def main() -> int:
     parser.add_argument("--competition", default="CUMCM", help="actual competition name from supplied materials; not a rules preset")
     parser.add_argument("--language", choices=sorted(TEMPLATE_DIRS), default="zh", help="paper scaffold language; independent of competition name")
     parser.add_argument("--keywords", required=True, help="semicolon-separated keywords from the actual problem, model, or method")
+    parser.add_argument("--cover-pdf", help="project-local one-page cover filled from the declared official template; remaining format needs review")
     args = parser.parse_args()
     project = args.project.resolve()
     if not project.is_dir():
         parser.error(f"project is not a directory: {project}")
     try:
         manifest = initialize(project, args.title, args.competition_year, args.keywords,
-                              competition=args.competition, language=args.language)
+                              competition=args.competition, language=args.language, cover_pdf=args.cover_pdf)
     except ValueError as exc:
         parser.error(str(exc))
     print(f"initialized modular LaTeX paper: {manifest}")

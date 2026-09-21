@@ -134,6 +134,8 @@ Built from the CUMCM workflow, with a shared modeling, computation, review and C
 | Teddy Cup and other data-analysis tasks | Data processing/evaluation guidance and shared paper delivery tools | Result tables, data fields and package contents |
 | Statistical modeling and open-topic tasks | Topic selection, data feasibility and research design guidance | Official theme, data sources and scope of conclusions |
 
+Huawei Cup has a [delivery adaptation guide](.agents/skills/cumcm-workflow/references/huawei-delivery.md): include a completed current official cover PDF, check abstract length, identity outside the cover, submission filenames and attachments, and record the final PDF MD5. Rules come from the project; visual format review remains required. This is not a completed real-problem Huawei benchmark.
+
 **A generic paper scaffold is not an official template.** Current official requirements take priority. DOCX export and automatic conversion of arbitrary official templates are not provided. The agent supplies the competition name and paper language at the paper stage; you do not need to run initialization commands manually. See the [competition adaptation guide](.agents/skills/cumcm-workflow/references/competition-adaptation.md).
 
 <details>

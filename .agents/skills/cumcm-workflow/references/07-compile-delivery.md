@@ -1,5 +1,7 @@
 # Delivery responsibility
 
+For Huawei Cup / 中国研究生数学建模竞赛, also read [Huawei delivery adaptation](huawei-delivery.md): current official cover, abstract/anonymity checks, submission filenames, attachments and measured MD5 binding.
+
 Delivery is a `finalizing` responsibility. It uses only current user-supplied official rules/templates and the fresh `paper-delivery` handoff. That handoff must identify the reviewed PDF, the compile-bound editable LaTeX snapshot/entry point, every official computation source selected through `RESULTS_INDEX → successful official run → source snapshot`, and the official paper materials still requiring compliance review.
 
 The LaTeX/PDF chain supports the actual competition name recorded in the template manifest and both Chinese and English scaffolds. Apply [competition adaptation](competition-adaptation.md) and [competition writing](competition-writing.md) to current official rules, references and supplementary documents. Word-only submission still has no export-receipt path. Do not infer rule compliance from the selected language or a successful compile.

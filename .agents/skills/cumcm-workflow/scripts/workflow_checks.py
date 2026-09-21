@@ -1535,6 +1535,9 @@ def check_delivery(data: Any, root: Path, path: str) -> list[Finding]:
     severity = "warning" if isinstance(state, dict) and state.get("mode") == "working" else "error"
     findings.extend(finding("DELIVERY-E021", severity, "structural", "delivery", path, problem)
                     for problem in check_archives(root, data))
+    from submission_check import check_submission
+    findings.extend(finding("DELIVERY-E022", severity, "structural", "delivery", path, problem)
+                    for problem in check_submission(root, data))
     return findings
 
 

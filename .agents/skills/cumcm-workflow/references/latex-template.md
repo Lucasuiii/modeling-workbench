@@ -1,5 +1,7 @@
 # Reader-facing LaTeX scaffold
 
+For Huawei Cup / 中国研究生数学建模竞赛, also read [Huawei delivery adaptation](huawei-delivery.md): current official cover, abstract/anonymity checks, submission filenames, attachments and measured MD5 binding.
+
 Initialize after a claim-led `PAPER_PLAN.json` exists:
 
 ```bash

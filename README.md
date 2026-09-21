@@ -129,6 +129,8 @@ python3 "$S/project_status.py" --project /绝对路径/已有项目
 | 泰迪杯及其他数据分析任务 | 数据处理、评价指导，共用论文交付工具 | 结果表、数据字段和提交包 |
 | 统计建模及自主选题任务 | 选题、数据可得性与研究设计指导 | 官方主题、数据来源与结论范围 |
 
+华为杯另有[交付适配指南](.agents/skills/cumcm-workflow/references/huawei-delivery.md)：可装入按当届官方模板填写的封面 PDF，检查摘要页数、正文身份信息、提交文件名及附件，并记录最终 PDF 的 MD5。规则由项目提供，版式仍需逐页核对；这不代表已完成华为杯真题验收。
+
 **通用论文骨架不等于官方模板。** 当届官方要求优先；DOCX 导出与任意官方模板的自动转换尚未提供。比赛名称与论文语言由 agent 在论文阶段传入，不需要你手动运行初始化命令。详见[比赛适配指南](.agents/skills/cumcm-workflow/references/competition-adaptation.md)。
 
 <details>

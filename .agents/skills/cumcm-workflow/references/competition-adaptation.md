@@ -1,5 +1,7 @@
 # Adapt to the competition, preserve the workflow
 
+For Huawei Cup / 中国研究生数学建模竞赛, also read [Huawei delivery adaptation](huawei-delivery.md): current official cover, abstract/anonymity checks, submission filenames, attachments and measured MD5 binding.
+
 Use this guide when starting a competition other than a familiar CUMCM problem, or when the requested language, deliverables or research format differ. It is a routing guide, not a source of current competition rules. The same competition can contain several task families.
 
 ## Identify the actual assignment
