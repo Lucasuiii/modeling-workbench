@@ -8,6 +8,8 @@ Read the current official requirements for language, required sections, summary/
 
 Use the existing `PAPER_PLAN.paper_structure` and claim/representation selection for the mathematical argument. A Chinese engineering paper, an English modeling paper and a data-analysis report share the need to connect formulation, solution, result, evidence and limitations; they need not share heading order, length or typography. A diagram belongs when it explains a mechanism or dependency more clearly, not because a template demands one.
 
+Apply the common paper guide's default of developed explanations and useful, varied visual evidence in both Chinese and English. Match depth to the audience: explain the key modeling choices, non-obvious derivations and implications in a technical paper; preserve the decision, tradeoffs and supporting evidence in a concise client memo. Language choice does not change evidence standards or impose a fixed length. Expand substance where a reader would otherwise have to guess, and use the current organizer's space limits to prioritize it.
+
 For a client-facing memo or recommendation, identify its audience and decision. Lead with the action, supporting result, tradeoff and conditions under which it should change. Map every quantitative statement back to the same reviewed claims as the technical paper. Do not add stronger causal, optimality or deployment claims for rhetorical impact. Include such a document only when requested or required, and verify its actual packaging separately from the paper.
 
 ## English summary and terminology
@@ -24,9 +26,9 @@ For a reference actually used, verify bibliographic identity and that the inspec
 
 Distinguish published benchmark values from results reproduced in this project. Cite external constants, datasets and borrowed equations where they enter the argument, preserving their units and applicability. Use only literature lookup allowed by the task and competition; missing organizer materials still follow the user-supplied-source boundary. There is no minimum citation count.
 
-## Content review before cosmetic expansion
+## Review explanatory depth and visual coverage
 
-First repair task omissions, mathematical ambiguity, unsupported comparisons and contradictions between summary, tables and conclusions. Then improve explanations, captions and layout using existing evidence. Useful refinement answers a specific reader question; more pages, more charts or a mandatory “de-AI” rewrite does not establish quality.
+First repair task omissions, mathematical ambiguity, unsupported comparisons and contradictions between summary, tables and conclusions. Then look for underdeveloped reasoning and missed visualization opportunities in the existing evidence, following the common paper guide's reader review. Expand explanations and add complementary figures where they answer a concrete reader question; review captions, interpretation and layout together. More pages, more charts or a mandatory “de-AI” rewrite alone does not establish quality.
 
 Use the current quality report/revision log when a real finding needs tracking. Stop when consequential findings are resolved or transparently retained within scope, and further changes add little value under the available budget. A new experiment or changed conclusion follows the existing upstream revision and approval process. Recompile and inspect the changed artifact when source edits affect it; prior PDF review does not automatically cover the new PDF.
 

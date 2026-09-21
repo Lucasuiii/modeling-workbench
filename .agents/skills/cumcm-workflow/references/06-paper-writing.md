@@ -8,10 +8,12 @@ For English work, audience-specific documents or reference verification, read [c
 
 ## Plan the argument before LaTeX
 
+Default to a fully developed, visually informative paper. Give important reasoning and results enough space for a reader to understand and assess them without opening the code or reconstructing missing steps. A short conversational answer is not the target form of a competition paper. Respect the user's requested depth and the current official page limits; spend space on the decisions and evidence that matter most.
+
 1. Select the validated claims that answer the official questions.
-2. Choose the best representation for each claim from existing evidence.
+2. Actively look for useful visual explanations in the handoff candidates and existing evidence; choose complementary prose, equations, tables and figures for the important claims.
 3. Design `paper_structure` as the semantic argument flow.
-4. Generate only the tables/figures justified by the plan and existing results.
+4. Generate the selected tables/figures from existing results and draw helpful model/algorithm diagrams. Do not stop at whatever images the computation stage happened to export.
 5. Adapt a declared official paper template when supplied; otherwise initialize the generic scaffold and keep compliance unverified until rule/instruction documents are checked.
 6. Write, compile, render every page, and review the PDF.
 
@@ -21,6 +23,14 @@ Sections are not independent essays stapled together. Each one states, in its op
 
 `PAPER_PLAN.json` needs `claim_selection`, `representation_plan`, `paper_structure`, and `authoring_task_ref` — the task writing the paper, which must differ from the `validation-paper` handoff's `producing_task_ref` (see `references/handoffs.md`). Legacy argument layers, reference-paper counts, page budgets, and figure counts may remain optional notes but are not hard gates. A plan with no table/figure creates a warning to reconsider communication, not a failure.
 
+## Develop the explanation
+
+For the central models and results, connect the question, modeling choice, assumptions, formulation, solution and interpretation in continuous prose. Explain why a key objective or constraint represents the real problem, how a non-obvious equation follows, and what each important variable and parameter means, including units. Describe enough of the actual algorithm, stopping criteria and parameter selection for a reader to understand the computation. Allocate detail according to mathematical difficulty and consequence; a familiar algebraic step needs less space than a consequential approximation.
+
+After reporting a result, explain its magnitude, pattern, comparison and practical implication using the available evidence. Describe where performance changes or a constraint becomes active, and connect that observation to the model when justified. Distinguish an observed pattern from a plausible explanation when the mechanism has not been tested. Avoid leaving the reader with a formula, a table and a sentence saying that the method works.
+
+Develop short technical notes into coherent paragraphs where the reasoning needs it. Keep lists and tables for genuinely parallel items, avoid repeating the problem statement as background, and move lengthy code or routine derivations to an appendix when permitted. Under a page limit, trim repetition and supporting bulk before removing the explanation needed to assess the main answer. These are writing defaults, not mandatory paragraph templates or word counts.
+
 ## Abstract and keywords
 
 Write the abstract after the body stabilizes. Use the order problem -> core method -> key result -> meaning/validation. For a quantitative task, include a few decision-bearing numerical anchors with units, comparison, uncertainty, or fit information when supported. Wrap the values that ARE the answer in `\keyresult{}` so a reader skimming the abstract finds them without parsing the sentences around them; use it in the body's result statements too. Bold the answer, not every number on the page — marking everything marks nothing. Avoid empty sequences such as “a model is built for Question 1; Question 2 is solved; results show effectiveness.”
@@ -29,8 +39,11 @@ Keywords must come from the actual object, data, model, or method. Do not use wo
 
 ## Claim-serving representations
 
+Actively favor a useful additional figure when it reveals a pattern, mechanism or comparison that would otherwise take substantial prose to explain. Inspect the actual indexed outputs behind promising handoff candidates; an empty figure directory does not mean there is nothing to visualize. Record selected representations in the existing `representation_plan`, with their purpose and evidence, rather than creating another planning artifact.
+
 Every representation answers one reading or evidence question:
 
+- data-coverage or distribution views explain the observations and their limits when the corresponding summaries already exist;
 - observed-versus-fitted plots show where the model follows or misses the data;
 - residual/error plots expose structure hidden by a global fit score;
 - comparison plots support method, scenario, or policy choice;
@@ -40,6 +53,10 @@ Every representation answers one reading or evidence question:
 - compact tables carry values that readers must compare or retrieve precisely.
 
 These are options, not a checklist. Do not require every kind, impose a minimum count, or invent residual, Monte Carlo, sensitivity, convergence, or robustness analyses that computation/validation did not execute. The initializer never decides what to plot.
+
+Use complementary views when they answer different questions: a prediction curve can locate errors, an existing error distribution can reveal their spread, and a compact metric table can give exact comparisons. Avoid several chart types repeating the same observation. Draw mechanism/algorithm diagrams from the actual model and distinguish schematic illustrations from measured results; decorative images do not improve an argument.
+
+Introduce each substantive figure with the question it helps answer, then discuss its important feature, evidence-supported interpretation and consequence in the surrounding text. Captions identify the data or scenario, axes/units, groups and uncertainty where applicable; the body explains why the reader should care. Keep plotting code and result bindings in the existing figure/evidence path. Replotting established outputs is allowed; a new metric, data aggregation, experiment or stronger conclusion goes back through computation/validation and any affected existing checkpoint before entering the paper.
 
 ## Result -> validation -> boundary
 
@@ -71,6 +88,8 @@ Non-transferable traits:
 Use this priority whenever sources conflict: a current official paper template and official rules > the generic scaffold > reference-paper style. Rule PDFs/DOCs are compliance inputs, not automatically adaptable templates.
 
 ## Reader-facing quality
+
+Before finalizing, review the paper as a reader: which key reasoning step is too compressed to follow, which result is merely announced, which existing evidence would be clearer as a figure, and which figure lacks interpretation? Repair specific gaps using the current evidence, and retain additions that improve understanding. Record material findings in the existing quality report; do not add a scoring matrix, minimum length, image quota or extra approval. An optional presentation improvement is P2; a missing explanation that makes a central claim unassessable is classified by its actual impact, not by paper length.
 
 - Explain why equations and algorithms are used and what results mean.
 - Prefer a representative result plus interpretation over number dumping.

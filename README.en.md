@@ -10,6 +10,7 @@ A mathematical modeling competition workflow for **Codex / Claude Code**. Supply
 
 - **Compare before committing to a model**: evaluate candidates and record why a model was selected before official computation.
 - **Trace paper values to their source**: computation records connect code, data and results, with stale-evidence detection after code changes.
+- **Develop the argument with useful visuals**: explain key derivations and results, actively illustrate existing evidence and model mechanisms, and respect the competition’s space limits.
 - **Deliver inspectable materials**: a Chinese or English paper, source and results, review records, and a compiled PDF checked page by page.
 
 The workflow helps organize and verify the process. Model suitability and the validity of conclusions still require judgment grounded in the problem and evidence.
