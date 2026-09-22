@@ -1,0 +1,86 @@
+% Huawei Cup typography starting point, not an official or year-specific template.
+% Independently authored CTeX layout informed by gmcmthesis (2018) structure.
+% No historical class, bundled font, logo, identity fields or fixed sections copied.
+% Check all settings below against the supplied current official requirements.
+\documentclass[UTF8,12pt,a4paper]{ctexart}
+
+\usepackage[a4paper,top=2.5cm,bottom=2.5cm,left=2.5cm,right=2.5cm]{geometry}
+\usepackage{amsmath,amssymb,mathtools,bm}
+\usepackage{booktabs,longtable,tabularx,array,multirow}
+\usepackage{graphicx,float,caption,subcaption}
+\usepackage{xcolor,enumitem,microtype}
+% Mechanism sketches, flowcharts and state diagrams are drawn, not plotted. The
+% packages are loaded so drawing one costs nothing; whether a figure belongs at
+% all is decided per claim in PAPER_PLAN.representation_plan, never by this file.
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,calc,shapes.geometric,fit,backgrounds}
+\usepackage[hidelinks]{hyperref}
+
+\input{metadata}
+\input{macros}
+
+\graphicspath{{../figures/}{figures/}}
+\setlength{\parindent}{2em}
+\setlength{\parskip}{0pt}
+% Editable defaults: title 16bp, first-level headings 14bp, body/captions 12bp.
+% 16bp baseline is a layout choice, not a universal Word single-spacing conversion.
+\newcommand{\huaweibodybaseline}{16bp}
+\renewcommand{\normalsize}{\fontsize{12bp}{\huaweibodybaseline}\selectfont}
+\normalsize
+\songti
+% Keep abstract full-width and at body size; article's default abstract is smaller.
+\renewenvironment{abstract}{%
+  \par\begin{center}\heiti\normalsize 摘要\end{center}\normalsize\songti
+}{\par}
+% No default TOC or code dump. Add only when useful and permitted by current rules.
+\ctexset{
+  section={beforeskip=1.7ex plus .4ex minus .2ex,afterskip=.9ex plus .2ex,format=\centering\zihao{4}\heiti},
+  subsection={beforeskip=1.3ex plus .3ex minus .2ex,afterskip=.6ex plus .2ex,format=\zihao{-4}\heiti},
+  subsubsection={beforeskip=1.0ex plus .2ex,afterskip=.4ex,format=\zihao{-4}\heiti}
+}
+\captionsetup{font=normalsize,labelfont=bf,labelsep=quad,justification=centering,singlelinecheck=true,skip=6pt}
+\captionsetup[table]{position=top}
+\captionsetup[figure]{position=bottom}
+\captionsetup[sub]{font=normalsize}
+\setlist{nosep,leftmargin=2.2em}
+\setlength{\abovedisplayskip}{8pt plus 2pt minus 2pt}
+\setlength{\belowdisplayskip}{8pt plus 2pt minus 2pt}
+\setlength{\abovedisplayshortskip}{5pt plus 2pt}
+\setlength{\belowdisplayshortskip}{5pt plus 2pt}
+\setlength{\textfloatsep}{12pt plus 3pt minus 3pt}
+\setlength{\floatsep}{10pt plus 2pt minus 2pt}
+\setlength{\intextsep}{10pt plus 2pt minus 2pt}
+\setlength{\LTpre}{6pt}
+\setlength{\LTpost}{6pt}
+\renewcommand{\arraystretch}{1.15}
+\setlength{\tabcolsep}{5pt}
+\setcounter{topnumber}{3}
+\setcounter{bottomnumber}{2}
+\setcounter{totalnumber}{4}
+\renewcommand{\topfraction}{0.9}
+\renewcommand{\bottomfraction}{0.8}
+\renewcommand{\textfraction}{0.08}
+\renewcommand{\floatpagefraction}{0.75}
+\clubpenalty=10000
+\widowpenalty=10000
+\displaywidowpenalty=10000
+\hypersetup{pdftitle={\papertitle},pdfsubject={Mathematical modeling paper}}
+
+\pagestyle{plain}
+
+\begin{document}
+
+\begin{center}
+  {\zihao{3}\heiti \papertitle\par}
+\end{center}
+
+\input{sections/00_abstract}
+\clearpage
+
+@@PLANNED_SECTION_INPUTS@@
+\input{sections/98_references}
+
+\appendix
+\input{sections/99_appendix}
+
+\end{document}

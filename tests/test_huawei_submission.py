@@ -180,6 +180,12 @@ class SubmissionTests(unittest.TestCase):
 @unittest.skipUnless(all(shutil.which(t) for t in ('xelatex', 'pdfinfo', 'pdftotext', 'pdftoppm')), 'XeLaTeX/Poppler required')
 class OfficialCoverTests(unittest.TestCase):
     def test_official_cover_compiles_and_remains_unverified(self):
+        self.check_cover_template("generic", "cumcm-contest-ctex")
+
+    def test_huawei_cover_compiles_and_remains_unverified(self):
+        self.check_cover_template("auto", "huawei-ctex")
+
+    def check_cover_template(self, template, template_id):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             build_inputs(root)
@@ -190,9 +196,10 @@ class OfficialCoverTests(unittest.TestCase):
             (root / 'official.txt').write_text('synthetic official template; not contest certification')
             write_json(root, 'problem/SOURCE_MANIFEST.json', {'sources': [
                 {'path': 'official.txt', 'origin': 'official', 'authoritative_for': ['paper_template']}]})
-            manifest_path = initialize(root, 'Demand model', 2030, 'demand; regression', competition='华为杯', cover_pdf='cover.pdf')
+            manifest_path = initialize(root, 'Demand model', 2030, 'demand; regression', competition='华为杯', cover_pdf='cover.pdf', template=template)
             manifest = json.loads(manifest_path.read_text())
             self.assertEqual(manifest['mode'], 'official_package_adapter')
+            self.assertEqual(manifest['template_id'], template_id)
             self.assertEqual(manifest['official_compliance'], 'unverified')
             self.assertEqual(manifest['competition_year'], 2030)
             (root / 'paper/sections/00_abstract.tex').write_text('Abstract\nSynthetic result.\\par\n')

@@ -2,6 +2,20 @@
 
 Read this for 华为杯 / 中国研究生数学建模竞赛 (Huawei Cup, GMCM/CPGMCM/CPMCM). Reuse the existing stages, evidence and three human checkpoints. This guide supplies adaptation mechanics, not a permanent edition of organizer rules. The agent performs these commands; users supply the current official materials and review the final pages/files.
 
+## Editable Huawei typography preset
+
+When no complete official LaTeX package is supplied, initialize with `--competition '华为杯' --language zh`. Default `--template auto` recognizes 华为杯, 研究生数学建模竞赛, Huawei Cup, GMCM, CPGMCM and CPMCM and selects `huawei-ctex` for Chinese output. Explicit `--template generic` preserves generic typography; `--template huawei-ctex` can also select the preset directly. English output keeps the English scaffold. Keep the existing validation checkpoint and `PAPER_PLAN` prerequisites.
+
+```bash
+python3 "$S/init_latex_paper.py" --project <p> --competition '华为杯' \
+  --language zh --competition-year <actual-year> \
+  --title '<actual paper title>' --keywords '<actual keywords>'
+```
+
+The independently authored CTeX preset takes structural lessons from the supplied `gmcmthesis` (2018) reference, without copying its class, fonts or logos. Defaults: centered 三号黑体 title, centered 四号黑体 first-level headings, 小四宋体 body and full-width abstract, body-sized table/figure/subfigure captions, centered continuous footer numbering, and no running header. The 16bp body baseline and 2.5cm margins are adjustable layout choices, not certified current official requirements. Edit the generated `paper/main.tex` against the current materials; `\huaweibodybaseline` controls body/abstract spacing. Tables inherit body size: split, wrap or use `longtable` before reducing text; a later explicit `\small` can still override this preset and needs page review.
+
+Abstract length is not fixed to one page. There is no fixed year, institution, chapter list, code appendix quota or mandatory TOC. Chapters still follow `PAPER_PLAN`. Add a TOC only when useful and permitted. The preset shares the generic Chinese macros and section scaffolds, so shared writing guidance remains single. Its manifest identifies `huawei-ctex`, keeps `official_compliance: unverified`, and uses the existing compile, evidence and delivery chain. It does not bypass a declared official paper template. Use the cover adapter below when applicable.
+
 ## Current materials and the historical template
 
 Collect the current official template, format specification and submission instructions through the existing intake/source manifest. Record the competition/year and source locations of each interpreted requirement in `PROJECT_BRIEF.md`. Missing materials block final compliance, not unrelated exploratory modeling. Do not infer current requirements from a competition label.
@@ -23,7 +37,7 @@ python3 "$S/init_latex_paper.py" --project <p> --competition '华为杯' \
   --cover-pdf paper-materials/filled-official-cover.pdf
 ```
 
-The initializer requires a declared, existing official template and a one-page cover. It copies the cover into the editable source, includes it as the first PDF page and records `official_package_adapter`; `official_compliance` stays `unverified`. The remaining abstract/body are still the generic Chinese scaffold: adjust their typography and abstract layout against the current official template. This is not automatic DOCX conversion or proof of matching the organizer template. Preserve existing paper sources; initialization refuses overwrites.
+The initializer requires a declared, existing official template and a one-page cover. It copies the cover into the editable source, includes it as the first PDF page and records `official_package_adapter`; `official_compliance` stays `unverified`. For recognized Huawei names in Chinese, the remaining abstract/body automatically use the editable Huawei preset; explicit `--template generic` retains the generic Chinese scaffold. Adjust typography and abstract layout against the current official template. This is not automatic DOCX conversion or proof of matching the organizer template. Preserve existing paper sources; initialization refuses overwrites.
 
 Compile/render through `record_compile.py`, then inspect every page. The embedded cover joins the compile-bound source snapshot and editable package. Set compliance only after the current official requirements and rendered result have actually been reviewed. Check cover logos, field placement, page order, abstract styling, and identity in image-based text visually.
 

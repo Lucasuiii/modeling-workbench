@@ -10,6 +10,7 @@ import re
 import shutil
 import subprocess
 import tempfile
+import unicodedata
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -165,21 +166,47 @@ def commit_staged_tree(staging: Path, paper_dir: Path) -> None:
         raise
 
 
+def is_huawei_competition(competition: str) -> bool:
+    name = unicodedata.normalize("NFKC", competition).casefold()
+    compact = re.sub(r"\s+", "", name)
+    return (
+        "华为杯" in compact
+        or "研究生数学建模竞赛" in compact
+        or bool(re.search(r"(?<![a-z0-9])(?:huawei[\s-]+cup|gmcm|cpgmcm|cpmcm)(?![a-z0-9])", name))
+        or "china postgraduate mathematical contest in modeling" in " ".join(name.split())
+    )
+
+
 def initialize(
     project: Path, title: str, competition_year: int, keywords: str,
     *, competition: str = "CUMCM", language: str = "zh", cover_pdf: str | None = None,
+    template: str = "auto",
 ) -> Path:
     competition = competition.strip()
     if not competition or any(ord(char) < 32 for char in competition):
         raise ValueError("competition must be a non-empty name without control characters")
     if language not in TEMPLATE_DIRS:
         raise ValueError("language must be zh or en")
+    if template not in {"auto", "generic", "huawei-ctex"}:
+        raise ValueError("template must be auto, generic or huawei-ctex")
+    if template == "auto":
+        template = "huawei-ctex" if language == "zh" and is_huawei_competition(competition) else "generic"
+    if template == "huawei-ctex" and language != "zh":
+        raise ValueError("huawei-ctex requires language zh")
     state, _, plan = validate_inputs(project)
     from workflow_checks import require_human_checkpoint
     require_human_checkpoint(project, "validation")
     skill_root = Path(__file__).resolve().parents[1]
     template_root = skill_root / "assets" / "latex-template" / TEMPLATE_DIRS[language]
-    template_meta = read_object(template_root / "template.json")
+    shared_root = template_root
+    if template != "generic":
+        template_root = skill_root / "assets" / "latex-template" / template
+
+    def asset(name: str) -> Path:
+        candidate = template_root / name
+        return candidate if candidate.is_file() else shared_root / name
+
+    template_meta = read_object(asset("template.json"))
     template_sources = official_paper_template_sources(project)
     cover = None
     if cover_pdf is not None:
@@ -226,11 +253,11 @@ def initialize(
         sections = staging / "sections"
         sections.mkdir(parents=True)
         for name in ("00_abstract.tex", "98_references.tex", "99_appendix.tex"):
-            shutil.copy2(template_root / "sections" / name, sections / name)
-        shutil.copy2(template_root / "macros.tex", staging / "macros.tex")
-        shutil.copy2(template_root / "references.bib", staging / "references.bib")
+            shutil.copy2(asset(f"sections/{name}"), sections / name)
+        shutil.copy2(asset("macros.tex"), staging / "macros.tex")
+        shutil.copy2(asset("references.bib"), staging / "references.bib")
 
-        section_template = (template_root / "planned-section.tex.tmpl").read_text(encoding="utf-8")
+        section_template = asset("planned-section.tex.tmpl").read_text(encoding="utf-8")
         for index, item in enumerate(structure, 1):
             section_id = str(item.get("section_id", ""))
             title_value = comment_text(item.get("title", ""))
@@ -256,7 +283,7 @@ def initialize(
             section_inputs.append(f"\\input{{sections/{filename[:-4]}}}")
 
         main_text = render(
-            (template_root / "main.tex.tmpl").read_text(encoding="utf-8"),
+            asset("main.tex.tmpl").read_text(encoding="utf-8"),
             {"PLANNED_SECTION_INPUTS": "\n".join(section_inputs)},
         )
         if cover is not None:
@@ -266,7 +293,7 @@ def initialize(
                 "\\includepdf[pages=1,pagecommand={}]{official-cover.pdf}\n"
                 "\\setcounter{page}{1}")
         metadata_text = render(
-            (template_root / "metadata.tex.tmpl").read_text(encoding="utf-8"),
+            asset("metadata.tex.tmpl").read_text(encoding="utf-8"),
             {
                 "PROJECT_ID": str(state["project_id"]),
                 "TITLE": latex_escape(chosen_title),
@@ -316,8 +343,10 @@ def main() -> int:
     parser.add_argument("--project", required=True, type=Path)
     parser.add_argument("--title", required=True, help="reader-facing title derived from the actual problem")
     parser.add_argument("--competition-year", type=int, default=datetime.now().year)
-    parser.add_argument("--competition", default="CUMCM", help="actual competition name from supplied materials; not a rules preset")
+    parser.add_argument("--competition", default="CUMCM", help="actual competition name; recognized Huawei names select Chinese typography in auto mode")
     parser.add_argument("--language", choices=sorted(TEMPLATE_DIRS), default="zh", help="paper scaffold language; independent of competition name")
+    parser.add_argument("--template", choices=("auto", "generic", "huawei-ctex"), default="auto",
+                        help="auto selects Huawei Chinese typography for recognized competition names; never certifies official rules")
     parser.add_argument("--keywords", required=True, help="semicolon-separated keywords from the actual problem, model, or method")
     parser.add_argument("--cover-pdf", help="project-local one-page cover filled from the declared official template; remaining format needs review")
     args = parser.parse_args()
@@ -326,7 +355,7 @@ def main() -> int:
         parser.error(f"project is not a directory: {project}")
     try:
         manifest = initialize(project, args.title, args.competition_year, args.keywords,
-                              competition=args.competition, language=args.language, cover_pdf=args.cover_pdf)
+                              competition=args.competition, language=args.language, cover_pdf=args.cover_pdf, template=args.template)
     except ValueError as exc:
         parser.error(str(exc))
     print(f"initialized modular LaTeX paper: {manifest}")

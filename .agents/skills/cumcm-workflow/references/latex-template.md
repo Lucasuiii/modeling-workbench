@@ -10,7 +10,7 @@ python3 "$S/init_latex_paper.py" --project <project> --competition <actual-name>
   --title <title> --keywords '<actual object; model; method>'
 ```
 
-`--competition` records the actual competition; it does not load a competition-specific format preset. `--language zh` uses the Chinese CTeX scaffold; `--language en` uses an English article scaffold with the same modular body and evidence binding. Omitted options retain CUMCM/Chinese defaults. The template mode `contest_article` identifies the English asset; it is not a new workflow mode. The existing Chinese asset ID `cumcm-contest-ctex` is retained for compatibility and does not override the manifest's actual competition name.
+`--competition` records the actual competition. Default `--template auto` selects `huawei-ctex` for recognized Huawei Cup/graduate modeling names in Chinese (see [Huawei adaptation](huawei-delivery.md)); other competitions retain the generic scaffold. Explicit `--template generic` overrides automatic selection, while `--template huawei-ctex` selects the Chinese preset directly. This selects typography only, never current official rules. `--language zh` uses the Chinese CTeX scaffold; `--language en` uses an English article scaffold with the same modular body and evidence binding. Omitted options retain CUMCM/Chinese defaults. The template mode `contest_article` identifies the English asset; it is not a new workflow mode. The existing Chinese asset ID `cumcm-contest-ctex` is retained for compatibility and does not override the manifest's actual competition name.
 
 Supply `--title` and `--keywords` from the actual problem, model, data, or method. The initializer has no reader-facing generic fallback and rejects generic title placeholders or workflow-oriented keyword filler.
 

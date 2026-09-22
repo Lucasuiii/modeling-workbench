@@ -17,7 +17,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / ".agents/skills/cumcm-workflow/scripts"))
 
-from init_latex_paper import initialize
+from init_latex_paper import initialize, is_huawei_competition
 from test_latex_template import build_inputs
 from test_paper_pipeline import build_paper_ready_project
 from recorder_fixtures import run_script
@@ -57,6 +57,96 @@ class CrossCompetitionTests(unittest.TestCase):
             self.assertEqual(manifest["template_source"],
                              f"repo_asset:{manifest['template_id']}@{manifest['template_version']}")
             self.assertEqual(check_schema(manifest, "latex_template", "paper", "manifest"), [])
+
+    def test_huawei_name_detection_and_explicit_override(self):
+        for name in ("华为杯", "2026年“华为杯”中国研究生数学建模竞赛", "全国研究生数学建模竞赛",
+                     "Huawei Cup 2026", "HUAWEI-CUP", "GMCM", "CPGMCM/CPMCM", "ＧＭＣＭ",
+                     "China Postgraduate Mathematical Contest in Modeling"):
+            with self.subTest(name=name):
+                self.assertTrue(is_huawei_competition(name))
+        for name in ("CUMCM", "MCM/ICM", "MathorCup", "Huawei programming contest", "notgmcm", "GMCMx"):
+            with self.subTest(name=name):
+                self.assertFalse(is_huawei_competition(name))
+        for language, template, expected in (("zh", "auto", "huawei-ctex"),
+                                              ("zh", "generic", "cumcm-contest-ctex"),
+                                              ("en", "auto", "modeling-contest-article")):
+            with self.subTest(language=language, template=template), tempfile.TemporaryDirectory() as temp:
+                root = Path(temp)
+                build_inputs(root)
+                manifest = json.loads(initialize(root, "Demand model", 2030, "demand",
+                    competition="GMCM", language=language, template=template).read_text())
+                self.assertEqual(manifest["template_id"], expected)
+                self.assertEqual(manifest["official_compliance"], "unverified")
+
+    def test_huawei_preset_cli_and_safety_boundaries(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            build_inputs(root)
+            with self.assertRaisesRegex(ValueError, "requires language zh"):
+                initialize(root, "Demand model", 2030, "demand", language="en", template="huawei-ctex")
+            done = run_script("init_latex_paper.py", "--project", str(root),
+                              "--competition", "华为杯",
+                              "--competition-year", "2030", "--title", "Demand model", "--keywords", "demand")
+            self.assertEqual(done.returncode, 0, done.stderr)
+            manifest = json.loads((root / "paper/LATEX_TEMPLATE_MANIFEST.json").read_text())
+            self.assertEqual(manifest["template_id"], "huawei-ctex")
+            self.assertEqual(manifest["official_compliance"], "unverified")
+            self.assertEqual(manifest["competition_year"], 2030)
+            self.assertEqual(check_schema(manifest, "latex_template", "paper", "manifest"), [])
+            for path in manifest["required_files"]:
+                self.assertTrue((root / path).is_file(), path)
+            with self.assertRaisesRegex(ValueError, "refusing to overwrite"):
+                initialize(root, "Demand model", 2030, "demand", template="huawei-ctex")
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            build_inputs(root)
+            write_json(root, "problem/SOURCE_MANIFEST.json", {"sources": [
+                {"path": "official.tex", "origin": "official", "authoritative_for": ["paper_template"]}]})
+            with self.assertRaisesRegex(ValueError, "official paper template"):
+                initialize(root, "Demand model", 2030, "demand", template="huawei-ctex")
+            self.assertFalse((root / "paper/main.tex").exists())
+
+    @unittest.skipUnless(all(shutil.which(t) for t in ("xelatex", "pdftohtml", "pdftotext")),
+                         "XeLaTeX/Poppler required")
+    def test_huawei_rendered_typography_and_page_break(self):
+        import xml.etree.ElementTree as ET
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            build_inputs(root)
+            manifest = json.loads(initialize(root, "轴承诊断研究", 2030, "轴承；诊断",
+                                             competition="华为杯", template="huawei-ctex").read_text())
+            paper = root / "paper"
+            (paper / "sections/00_abstract.tex").write_text(
+                "\\begin{abstract}\n摘要正文标记。\\par\n\\noindent 关键词：轴承\\end{abstract}\n")
+            for rel in manifest["section_files"]:
+                if not rel.endswith("00_abstract.tex"):
+                    (root / rel).write_text("")
+            (root / manifest["section_paths"][0]["path"]).write_text(
+                r"\section{模型分析} 正文标记。"
+                r"\begin{table}[H]\centering\caption{表格标题标记}"
+                r"\begin{tabular}{ll}\toprule 参数标记 & 数值\\\midrule 速度 & 10\\\bottomrule"
+                r"\end{tabular}\end{table}"
+                r"\begin{figure}[H]\centering\rule{2cm}{1cm}\caption{图形标题标记}\end{figure}")
+            done = subprocess.run(["xelatex", "-interaction=nonstopmode", "-halt-on-error", "main.tex"],
+                                  cwd=paper, capture_output=True, text=True)
+            self.assertEqual(done.returncode, 0, done.stdout[-4000:])
+            subprocess.run(["pdftohtml", "-xml", "-i", "-zoom", "1", "main.pdf", "sizes.xml"],
+                           cwd=paper, check=True, capture_output=True)
+            tree = ET.parse(paper / "sizes.xml")
+            fonts = {f.get("id"): float(f.get("size")) for f in tree.iter("fontspec")}
+            texts = [("".join(t.itertext()), fonts[t.get("font")]) for t in tree.iter("text")]
+            for marker, expected in (("轴承诊断研究", 16), ("模型分析", 14),
+                                     ("摘要正文标记", 12), ("正文标记", 12),
+                                     ("参数标记", 12), ("表格标题标记", 12), ("图形标题标记", 12)):
+                with self.subTest(marker=marker):
+                    matches = [size for text, size in texts if marker in text]
+                    self.assertTrue(matches, texts)
+                    self.assertTrue(all(abs(size - expected) < 0.6 for size in matches), matches)
+            pages = subprocess.run(["pdftotext", "main.pdf", "-"], cwd=paper, check=True,
+                                   capture_output=True, text=True).stdout.split("\f")
+            self.assertIn("摘要正文标记", pages[0])
+            self.assertIn("模型分析", pages[1])
+            self.assertEqual(len([p for p in pages if p.strip()]), 2)
 
     def test_defaults_keep_existing_cumcm_interface(self):
         with tempfile.TemporaryDirectory() as temp:

@@ -1,0 +1,7 @@
+{
+  "template_id": "huawei-ctex",
+  "template_version": "0.6.0",
+  "engine": "xelatex",
+  "mode": "contest_ctex",
+  "description": "Editable graduate modeling typography preset; current official compliance must be reviewed. Shared sections and macros inherit generic-ctex."
+}
