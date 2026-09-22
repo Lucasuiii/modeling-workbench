@@ -115,6 +115,7 @@ def build_plan(root: Path, changed: list[str]) -> dict[str, Any]:
         detail = ", ".join(sorted(stale_capabilities)) or "all capabilities with unresolved source dependencies"
         actions["problem-analysis"].append(f"re-derive capabilities: {detail}")
 
+    model_changed = "model/MODEL_CONTRACT.json" in changed_set
     model_items = [item for item in as_list(model.get("components")) if isinstance(item, dict)]
     all_models = {str(item.get("model_id")) for item in model_items}
     stale_models = {
@@ -123,6 +124,9 @@ def build_plan(root: Path, changed: list[str]) -> dict[str, Any]:
         if {str(value) for value in as_list(item.get("capability_ids"))} & stale_capabilities
         or {str(value) for value in as_list(item.get("inputs"))} & (touched_sources | stale_facts)
     }
+    if model_changed:
+        stale_models = set(all_models)
+        actions["model-design"].append("re-review changed model contract and its downstream evidence")
     mapped_capabilities = set().union(
         *({str(value) for value in as_list(item.get("capability_ids"))} for item in model_items),
         set(),
@@ -188,6 +192,8 @@ def build_plan(root: Path, changed: list[str]) -> dict[str, Any]:
     }
     if touched_sources and official_runs and not upstream_runs and not stale_runs:
         upstream_runs = set(official_runs)
+    if model_changed:
+        upstream_runs.update(official_runs)
     stale_runs.update(upstream_runs)
     # Propagate along declared output -> formal input edges, including frozen
     # copies. A historical input requires an explicit binding decision, not a
@@ -244,6 +250,9 @@ def build_plan(root: Path, changed: list[str]) -> dict[str, Any]:
     }
     if touched_sources and result_items and not stale_results:
         stale_results = {str(item.get("result_id")) for item in result_items}
+    if "results/RESULTS_INDEX.json" in changed_set:
+        stale_results.update(str(item.get("result_id")) for item in result_items)
+        actions["validation"].append("re-review changed results index and rebuild dependent evidence")
     if stale_results:
         actions["computation"].append(
             f"re-point results to the successor: index_result.py --follow-lineage ({', '.join(sorted(stale_results))})"
@@ -261,6 +270,8 @@ def build_plan(root: Path, changed: list[str]) -> dict[str, Any]:
             stale_claims.add(str(claim.get("claim_id")))
     if touched_sources and claim_items and not stale_claims:
         stale_claims = {str(item.get("claim_id")) for item in claim_items}
+    if "validation/CLAIM_LEDGER.json" in changed_set or "results/RESULTS_INDEX.json" in changed_set:
+        stale_claims.update(str(item.get("claim_id")) for item in claim_items)
     if stale_claims:
         actions["validation"].append(f"re-establish evidence for claims: {', '.join(sorted(stale_claims))}")
 
@@ -307,6 +318,10 @@ def build_plan(root: Path, changed: list[str]) -> dict[str, Any]:
                     incomplete = True
     if stale_claims and (incomplete or not stale_sections):
         stale_sections.update(all_sections)
+    paper_contract_changed = bool(changed_set & {"paper/PAPER_PLAN.json", "paper/LATEX_TEMPLATE_MANIFEST.json"})
+    if paper_contract_changed or "validation/CLAIM_LEDGER.json" in changed_set:
+        stale_sections.update(all_sections)
+        actions["paper"].append("re-review all sections and rebuild paper handoff after contract change")
     changed_tex = sorted(path for path in changed_set if path.endswith((".tex", ".bib")))
     for path in changed_tex:
         stale_sections.add(path)
@@ -319,7 +334,7 @@ def build_plan(root: Path, changed: list[str]) -> dict[str, Any]:
         unaffected["paper"].extend(untouched_sections)
 
     compile_inputs = set(as_list(receipt.get("source_snapshot", {}).get("files")))
-    if stale_sections or stale_claims or stale_runs or stale_models or changed_tex or compile_inputs & changed_set:
+    if stale_sections or stale_claims or stale_runs or stale_models or changed_tex or compile_inputs & changed_set or changed_set & {"model/MODEL_CONTRACT.json", "results/RESULTS_INDEX.json", "validation/CLAIM_LEDGER.json", "paper/PAPER_PLAN.json", "paper/LATEX_TEMPLATE_MANIFEST.json"}:
         actions["delivery"].append("recompile and rebind: record_compile.py --update-quality")
         if receipt:
             actions["delivery"].append("the previous PDF/source binding is void until the recompile succeeds")

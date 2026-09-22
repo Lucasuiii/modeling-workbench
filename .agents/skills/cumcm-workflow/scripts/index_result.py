@@ -119,6 +119,16 @@ def write_atomic(path: Path, payload: dict[str, Any]) -> None:
     os.replace(temp_name, path)
 
 
+def current_value(root: Path, item: dict[str, Any]) -> Any:
+    from canonical_evidence import resolve_official_computation
+    try:
+        resolve_official_computation(root, {"results": [item]})
+        rel, pointer = item["output_locator"].split("#", 1)
+        return resolve_pointer(json.loads((root / rel).read_text(encoding="utf-8")), pointer)
+    except (OSError, ValueError, KeyError) as exc:
+        raise SystemExit(str(exc)) from exc
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Add or refresh one entry in results/RESULTS_INDEX.json")
     parser.add_argument("--project", required=True, type=Path)
@@ -159,6 +169,8 @@ def main() -> int:
         remaining = [item for item in results if str(item.get("result_id")) != args.remove]
         if len(remaining) == len(results):
             parser.error(f"no such result: {args.remove}")
+        if not remaining:
+            parser.error("cannot remove the last formal result; index must remain nonempty")
         results = remaining
     elif args.follow_lineage:
         runs = all_runs(root)
@@ -167,6 +179,7 @@ def main() -> int:
             current = str(item.get("run_id", ""))
             newest = newest_descendant(runs, current)
             if newest == current:
+                current_value(root, item)
                 continue
             manifest = runs[newest]
             locator = str(item.get("output_locator", ""))
@@ -177,7 +190,7 @@ def main() -> int:
             item["run_id"] = newest
             item["output_locator"] = frozen_locator(manifest, newest, f"{live}#{locator.partition('#')[2]}")
             rel, _, pointer = item["output_locator"].partition("#")
-            item["value"] = resolve_pointer(read_object(root / rel), pointer)
+            item["value"] = current_value(root, item)
             moved += 1
             print(f"{item['result_id']}: {current} -> {newest}")
         if not moved:
@@ -186,7 +199,7 @@ def main() -> int:
         for item in results:
             locator = str(item.get("output_locator", ""))
             rel, _, pointer = locator.partition("#")
-            item["value"] = resolve_pointer(read_object(root / rel), pointer)
+            item["value"] = current_value(root, item)
     else:
         for required in ("result_id", "run", "locator", "name", "scope"):
             if not getattr(args, required.replace("-", "_")):
@@ -204,7 +217,7 @@ def main() -> int:
         rel, _, pointer = locator.partition("#")
         if locator != args.locator:
             print(f"locator points at the frozen copy: {locator}")
-        value = resolve_pointer(read_object(root / rel), pointer)
+        value = current_value(root, {"run_id": args.run, "output_locator": locator})
         entry = {
             "result_id": args.result_id,
             "name": args.name,
@@ -221,6 +234,8 @@ def main() -> int:
         }
         results = [item for item in results if str(item.get("result_id")) != args.result_id] + [entry]
 
+    if not results:
+        parser.error("index must contain at least one formal result")
     index["results"] = sorted(results, key=lambda item: str(item.get("result_id")))
     index["updated_at"] = utc_now()
     index["schema_version"] = WORKFLOW_VERSION

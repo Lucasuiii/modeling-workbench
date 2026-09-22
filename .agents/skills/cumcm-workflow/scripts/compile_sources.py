@@ -10,6 +10,7 @@ from pathlib import Path
 def runtime_roots() -> list[Path]:
     """Only installed TeX trees and operating-system fonts may remain external."""
     roots = [Path(p) for p in ('/System/Library/Fonts', '/Library/Fonts', '/usr/share/fonts', '/usr/local/share/fonts')]
+    roots.extend([Path.home() / 'Library/Fonts', Path.home() / '.local/share/fonts'])
     if os.environ.get('WINDIR'):
         roots.append(Path(os.environ['WINDIR']) / 'Fonts')
     kpsewhich = shutil.which('kpsewhich')
@@ -19,7 +20,7 @@ def runtime_roots() -> list[Path]:
             value = result.stdout.strip()
             if result.returncode == 0 and value and Path(value).is_absolute():
                 roots.append(Path(value).resolve())
-    return roots
+    return [root.resolve() for root in roots]
 
 
 def observed_sources(root: Path, work_dir: Path, fls: Path, external_roots: list[Path]) -> set[str]:

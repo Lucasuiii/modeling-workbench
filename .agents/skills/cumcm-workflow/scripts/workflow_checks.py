@@ -999,15 +999,8 @@ def check_run(data: Any, root: Path, rel_path: str, capability_ids: set[str], su
         elif official_run and not superseded and isinstance(snapshot, dict):
             # The frozen copy is immutable, so staleness now means the working tree
             # moved on from the run that backs the formal results.
-            drifted = []
-            for frozen in as_list(snapshot.get("files")):
-                live = live_path_of(frozen)
-                frozen_path = safe_project_path(root, frozen)
-                live_file = safe_project_path(root, live) if live else None
-                if live is None or frozen_path is None or live_file is None:
-                    continue
-                if not live_file.is_file() or sha256(live_file) != sha256(frozen_path):
-                    drifted.append(live)
+            from canonical_evidence import live_evidence_drift
+            drifted = live_evidence_drift(root, data)
             if drifted:
                 findings.append(
                     finding(
@@ -1111,6 +1104,13 @@ def check_results(
     findings = check_envelope(data, "results_index", "computation", path)
     if not isinstance(data, dict):
         return findings
+    if as_list(data.get("results")):
+        from canonical_evidence import resolve_official_computation
+        try:
+            resolve_official_computation(root, data)
+        except (ValueError, OSError) as exc:
+            findings.append(finding("RESULT-E018", "error", "execution", "computation", path,
+                                    f"current official evidence is invalid: {exc}"))
     results = data.get("results")
     findings.extend(require_fields(results, ("name", "unit", "run_id", "output_locator", "scope", "evidence_state"), ("result_id",), "RESULT", "computation", path))
     for result in as_list(results):

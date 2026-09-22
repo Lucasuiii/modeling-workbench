@@ -72,7 +72,7 @@ class SubmissionTests(unittest.TestCase):
 
     def test_identity_casefold_in_body_and_metadata(self):
         self.data['submission']['rules']['identity_tokens'].append('Straße')
-        for token in ('UNIVERSITY XYZ', 'university xyz', 'STRASSE'):
+        for token in ('UNIVERSITY XYZ', 'university xyz', 'STRASSE', 'Ｕｎｉｖｅｒｓｉｔｙ ＸＹＺ'):
             with self.subTest(token=token):
                 self.pages[-1] = '1 Introduction\n' + token
                 self.assertTrue(any('outside the cover' in e for e in check_submission(self.root, self.data)))

@@ -12,6 +12,7 @@ import json
 import re
 import subprocess
 import zipfile
+import unicodedata
 from pathlib import Path
 
 from official_materials import classified_official_materials
@@ -53,6 +54,10 @@ def run_tool(argv: list[str]) -> str:
 
 def compact(value: str) -> str:
     return re.sub(r"\s+", "", value)
+
+
+def identity_text(value: str) -> str:
+    return compact(unicodedata.normalize("NFKC", value)).casefold()
 
 
 def positive(value, label: str) -> int:
@@ -108,10 +113,10 @@ def inspect_submission(root: Path, delivery: dict) -> tuple[dict, list[str]]:
     # XMP and the document information dictionary are both outside the cover.
     metadata = info + run_tool(["pdfinfo", "-meta", str(pdf)])
     for token in tokens:
-        if compact(token).casefold() in compact(metadata).casefold():
+        if identity_text(token) in identity_text(metadata):
             errors.append("identity information found in PDF metadata")
         for number, page in enumerate(pages[cover:], cover + 1):
-            if compact(token).casefold() in compact(page).casefold():
+            if identity_text(token) in identity_text(page):
                 errors.append(f"identity information found outside the cover on page {number}")
     abstract = rules["abstract"]
     maximum = positive(abstract["max_pages"], "abstract.max_pages")

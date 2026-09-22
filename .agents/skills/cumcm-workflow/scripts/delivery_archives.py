@@ -34,7 +34,7 @@ def live_path(rel: str) -> str:
     return rel
 
 
-def archive_members(root: Path, manifest: dict) -> dict[str, set[str]]:
+def archive_members(root: Path, manifest: dict) -> dict[str, dict[str, str]]:
     """One membership calculation is used by the packer and by the checker."""
     deliverables = manifest.get('deliverables', {})
     result = {}
@@ -43,12 +43,19 @@ def archive_members(root: Path, manifest: dict) -> dict[str, set[str]]:
     archive_paths = {item.get('archive') for item in deliverables.values() if isinstance(item, dict) and item.get('archive')}
     archive_targets = {(root / rel).resolve() for rel in archive_paths}
     support = set()
+    canonical = {}
     declared_editable = set()
     index = root / 'results/RESULTS_INDEX.json'
     if index.exists():
         for run in resolve_official_computation(root, read_object(root, 'results/RESULTS_INDEX.json')):
             for kind in ('source_files', 'formal_inputs', 'claim_bearing_outputs'):
-                support.update(live_path(str(rel)) for rel in run[kind])
+                for rel in run[kind]:
+                    member = live_path(str(rel))
+                    previous = canonical.get(member)
+                    if previous and local_file(root, previous).read_bytes() != local_file(root, rel).read_bytes():
+                        raise ValueError(f'conflicting frozen evidence for archive member: {member}')
+                    canonical[member] = rel
+                    support.add(member)
     for entry in manifest.get('files', []):
         if (root / entry['path']).resolve() in archive_targets:
             continue
@@ -77,15 +84,20 @@ def archive_members(root: Path, manifest: dict) -> dict[str, set[str]]:
             members = set(files)
             if item.get('entrypoint'):
                 members.add(item['entrypoint'])
+            bindings = {}
             for rel in members:
-                local_file(root, rel)
+                if Path(rel).is_absolute() or '..' in Path(rel).parts or '\\' in rel:
+                    raise ValueError(f'unsafe archive member: {rel}')
+                source = canonical.get(rel, rel)
+                local_file(root, source)
+                bindings[rel] = source
             archive = (root / item['archive']).resolve()
             if not archive.is_relative_to(root.resolve()) or archive.suffix.lower() != '.zip':
                 raise ValueError('delivery archive must be a project-local ZIP')
-            if any(local_file(root, rel) in archive_targets for rel in members):
+            if any(local_file(root, source) in archive_targets for source in bindings.values()):
                 raise ValueError('an archive cannot include itself')
             key = archive.relative_to(root.resolve()).as_posix()
-            result.setdefault(key, set()).update(members)
+            result.setdefault(key, {}).update(bindings)
     return result
 
 
@@ -107,7 +119,7 @@ def check_archives(root: Path, manifest: dict) -> list[str]:
                 for member in sorted(members):
                     if member not in names:
                         problems.append(f'{rel}: missing {member}; preserve project-relative directories')
-                    elif archive.read(member) != local_file(root, member).read_bytes():
+                    elif archive.read(member) != local_file(root, members[member]).read_bytes():
                         problems.append(f'{rel}: stale member {member}')
         except (OSError, ValueError, zipfile.BadZipFile, RuntimeError) as exc:
             problems.append(f'{rel}: {exc}')
@@ -124,7 +136,7 @@ def build_archives(root: Path, manifest: dict) -> None:
         try:
             with zipfile.ZipFile(temporary, 'w', zipfile.ZIP_DEFLATED) as archive:
                 for member in sorted(members):
-                    archive.write(local_file(root, member), member)
+                    archive.write(local_file(root, members[member]), member)
             os.replace(temporary, destination)
         finally:
             Path(temporary).unlink(missing_ok=True)

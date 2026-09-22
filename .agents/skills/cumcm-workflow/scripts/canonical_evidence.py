@@ -25,6 +25,33 @@ def read_object(path: Path) -> dict[str, Any]:
     return value
 
 
+def live_evidence_drift(project: Path, run: dict[str, Any]) -> list[str]:
+    """Compare current source/team inputs with their preserved execution bytes.
+
+    Strip only this run's freeze layer: an explicitly historical upstream input
+    remains bound to the declared upstream snapshot, not its latest live output.
+    """
+    project = project.resolve()
+    snapshot = (run.get("implementation") or {}).get("source_snapshot") or {}
+    frozen_paths = list(snapshot.get("files", []))
+    frozen_paths += [e.get("path") for e in run.get("inputs", [])
+                     if isinstance(e, dict) and e.get("evidence_role") == "formal_input"]
+    drifted = []
+    for frozen in frozen_paths:
+        if not isinstance(frozen, str):
+            continue
+        parts = frozen.split("/")
+        if len(parts) <= 3 or parts[0] != "runs" or parts[2] not in {"source", "inputs"}:
+            continue
+        live = "/".join(parts[3:])
+        frozen_file, live_file = (project / frozen).resolve(), (project / live).resolve()
+        if (not frozen_file.is_relative_to(project) or not live_file.is_relative_to(project)
+                or not frozen_file.is_file() or not live_file.is_file()
+                or sha256_file(live_file) != sha256_file(frozen_file)):
+            drifted.append(live)
+    return sorted(set(drifted))
+
+
 def resolve_official_computation(project: Path, results: dict[str, Any] | None = None) -> list[dict[str, Any]]:
     """Return referenced successful official runs or fail on any broken formal link."""
     project = project.resolve()
@@ -95,6 +122,10 @@ def resolve_official_computation(project: Path, results: dict[str, Any] | None =
                 if not valid:
                     raise ValueError(f"formal file SHA256 integrity failure in {run_id}: {rel}")
 
+        drifted = live_evidence_drift(project, run)
+        if drifted:
+            raise ValueError(f"current official evidence is stale in {run_id}; rerun required: {', '.join(drifted)}")
+
         output_roles = {
             str(entry.get("path")): entry.get("evidence_role")
             for entry in run.get("outputs", [])
@@ -110,6 +141,15 @@ def resolve_official_computation(project: Path, results: dict[str, Any] | None =
                     f"formal result does not locate a claim-bearing output of official run {run_id}: "
                     f"{result.get('result_id')}"
                 )
+
+            from json_pointer import resolve_json_pointer
+            pointer = locator.split("#", 1)[1]
+            try:
+                output = json.loads((project / output_path).read_text(encoding="utf-8"))
+            except (OSError, ValueError) as exc:
+                raise ValueError(f"cannot read formal result output: {output_path}") from exc
+            if not resolve_json_pointer(output, pointer)[1]:
+                raise ValueError(f"formal result JSON pointer does not resolve: {locator}")
 
         resolved.append(
             {

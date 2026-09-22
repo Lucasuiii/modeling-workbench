@@ -361,10 +361,11 @@ class ProvenanceIntegrityTests(unittest.TestCase):
             run_script("index_result.py", "--project", str(project), "--result-id", "RES-Q1-001",
                        "--run", "RUN-IN", "--locator", "results/q1_output.json#/minimum_cost",
                        "--name", "Minimum cost", "--unit", "cost", "--scope", "declared candidates only")
-            # regenerating the team input does not invalidate the preserved run
+            # History remains intact, but this is no longer current official evidence.
             (project / "data" / "cleaned.csv").write_text("a,b\n9,9\n", encoding="utf-8")
             findings, _ = check_project(project, "computation")
-            self.assertEqual([item for item in findings if item.severity == "error"], [])
+            self.assertIn("RUN-E020", {item.rule_id for item in findings})
+            self.assertEqual((project / "runs/RUN-IN/inputs/data/cleaned.csv").read_text(), "a,b\n1,2\n")
 
 
 class LineageTests(unittest.TestCase):
