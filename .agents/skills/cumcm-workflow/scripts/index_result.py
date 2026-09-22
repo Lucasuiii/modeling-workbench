@@ -122,7 +122,9 @@ def write_atomic(path: Path, payload: dict[str, Any]) -> None:
 def current_value(root: Path, item: dict[str, Any]) -> Any:
     from canonical_evidence import resolve_official_computation
     try:
-        resolve_official_computation(root, {"results": [item]})
+        # Recompute the value while retaining every evidence/path check.
+        probe = {key: value for key, value in item.items() if key != "value"}
+        resolve_official_computation(root, {"results": [probe]})
         rel, pointer = item["output_locator"].split("#", 1)
         return resolve_pointer(json.loads((root / rel).read_text(encoding="utf-8")), pointer)
     except (OSError, ValueError, KeyError) as exc:

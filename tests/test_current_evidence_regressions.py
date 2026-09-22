@@ -126,7 +126,7 @@ class CurrentEvidenceTests(unittest.TestCase):
         child['outputs'][0].update(path='runs/OTHER/outputs/result.json', sha256=sha256_file(frozen))
         write_json(self.root, 'runs/OTHER/RUN_MANIFEST.json', child)
         data = json.loads(self.index.read_text())
-        data['results'].append(dict(data['results'][0], result_id='OTHER', run_id='OTHER', output_locator='runs/OTHER/outputs/result.json#/restricted_policy_cost'))
+        data['results'].append(dict(data['results'][0], result_id='OTHER', run_id='OTHER', value=99, output_locator='runs/OTHER/outputs/result.json#/restricted_policy_cost'))
         write_json(self.root, 'results/RESULTS_INDEX.json', data)
         with self.assertRaisesRegex(ValueError, 'conflicting frozen evidence'):
             build_archives(self.root, self.delivery)

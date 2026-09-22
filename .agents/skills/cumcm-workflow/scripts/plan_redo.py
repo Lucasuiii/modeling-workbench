@@ -253,10 +253,14 @@ def build_plan(root: Path, changed: list[str]) -> dict[str, Any]:
     if "results/RESULTS_INDEX.json" in changed_set:
         stale_results.update(str(item.get("result_id")) for item in result_items)
         actions["validation"].append("re-review changed results index and rebuild dependent evidence")
-    if stale_results:
+    lineage_results = {str(item.get("result_id")) for item in result_items
+                       if str(item.get("run_id")) in stale_runs | superseded}
+    if lineage_results:
         actions["computation"].append(
-            f"re-point results to the successor: index_result.py --follow-lineage ({', '.join(sorted(stale_results))})"
+            f"after successful successors exist, re-point results: index_result.py --follow-lineage ({', '.join(sorted(lineage_results))})"
         )
+    if stale_results - lineage_results or "results/RESULTS_INDEX.json" in changed_set:
+        actions["computation"].append("revalidate/reindex dependent results against their current official runs and locators; refresh values only after evidence validation")
 
     claim_items = [item for item in as_list(claims.get("claims")) if isinstance(item, dict)]
     stale_claims: set[str] = set()

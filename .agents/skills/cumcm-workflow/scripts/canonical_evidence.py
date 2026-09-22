@@ -148,8 +148,11 @@ def resolve_official_computation(project: Path, results: dict[str, Any] | None =
                 output = json.loads((project / output_path).read_text(encoding="utf-8"))
             except (OSError, ValueError) as exc:
                 raise ValueError(f"cannot read formal result output: {output_path}") from exc
-            if not resolve_json_pointer(output, pointer)[1]:
+            actual_value, found = resolve_json_pointer(output, pointer)
+            if not found:
                 raise ValueError(f"formal result JSON pointer does not resolve: {locator}")
+            if "value" in result and result["value"] != actual_value:
+                raise ValueError(f"formal result value differs from frozen output: {locator}")
 
         resolved.append(
             {

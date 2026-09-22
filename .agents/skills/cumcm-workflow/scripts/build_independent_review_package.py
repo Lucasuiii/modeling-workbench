@@ -170,7 +170,7 @@ def build(project: Path, *, review_mode: str = "auto", previous_review_path: str
             for rel in evidence["source_files"]:
                 copy_material(project, staging, rel, "computation_source", records, seen)
             for rel in evidence["formal_inputs"]:
-                copy_material(project, staging, rel, "run_record", records, seen)
+                copy_material(project, staging, rel, "formal_input", records, seen)
             for rel in evidence["claim_bearing_outputs"]:
                 copy_material(project, staging, rel, "executed_output", records, seen)
 

@@ -1191,6 +1191,21 @@ def check_independent_review_package(data: Any, root: Path, path: str) -> list[F
     missing_roles = sorted(required_roles - roles)
     if missing_roles:
         findings.append(finding("IREVIEW-E003", "error", "structural", "validation", path, f"independent review package misses roles: {', '.join(missing_roles)}"))
+    # Official files already copied as official_input retain that role after dedup.
+    from canonical_evidence import resolve_official_computation
+    try:
+        inputs = {rel for run in resolve_official_computation(root) for rel in run["formal_inputs"]}
+        source_manifest, _ = read_json(root / "problem/SOURCE_MANIFEST.json")
+        official = {str(item.get("path")) for item in as_list((source_manifest or {}).get("sources"))
+                    if isinstance(item, dict) and item.get("origin") in {"official", "organizer_attachment"}}
+        for rel in sorted(inputs - official):
+            expected_role = "formal_input"
+            if not any(isinstance(item, dict) and item.get("source_path") == rel and item.get("role") == expected_role for item in files):
+                findings.append(finding("IREVIEW-E003", "error", "structural", "validation", path,
+                                        f"review package must include {rel} as {expected_role}"))
+    except (ValueError, OSError) as exc:
+        findings.append(finding("IREVIEW-E025", "error", "execution", "validation", path,
+                                f"review package current evidence is invalid: {exc}"))
     digest_entries: list[dict[str, str]] = []
     upstream_entries: list[dict[str, str]] = []
     for item in files:

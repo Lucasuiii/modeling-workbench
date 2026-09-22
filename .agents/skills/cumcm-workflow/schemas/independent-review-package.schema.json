@@ -89,6 +89,7 @@
               "model_contract",
               "computation_source",
               "run_record",
+              "formal_input",
               "executed_output",
               "review_instruction"
             ]

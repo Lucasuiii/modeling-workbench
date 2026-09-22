@@ -116,6 +116,8 @@ def check_archives(root: Path, manifest: dict) -> list[str]:
                 for name in names:
                     if Path(name).is_absolute() or '..' in Path(name).parts or '\\' in name:
                         problems.append(f'{rel}: unsafe member {name}')
+                for extra in sorted(set(names) - set(members)):
+                    problems.append(f'{rel}: unexpected member {extra}')
                 for member in sorted(members):
                     if member not in names:
                         problems.append(f'{rel}: missing {member}; preserve project-relative directories')
