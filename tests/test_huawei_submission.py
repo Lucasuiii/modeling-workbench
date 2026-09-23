@@ -2,6 +2,8 @@
 from __future__ import annotations
 import copy
 import json
+import locale
+import os
 import shutil
 import subprocess
 import sys
@@ -15,7 +17,7 @@ from workflow_fixtures import write_json
 from recorder_fixtures import run_script
 from test_latex_template import build_inputs
 from init_latex_paper import initialize
-from submission_check import inspect_submission, check_submission, measure, main
+from submission_check import inspect_submission, check_submission, is_huawei, measure, main, run_tool
 from workflow_checks import check_delivery
 
 
@@ -26,7 +28,7 @@ class SubmissionTests(unittest.TestCase):
         self.root = Path(self.temp.name)
         (self.root / 'paper').mkdir()
         (self.root / 'paper/A999.pdf').write_bytes(b'%PDF-synthetic-file')
-        (self.root / 'rules.txt').write_text('synthetic current rules')
+        (self.root / 'rules.txt').write_text('synthetic current rules', encoding="utf-8")
         write_json(self.root, 'problem/SOURCE_MANIFEST.json', {'sources': [
             {'path': 'rules.txt', 'origin': 'official', 'authoritative_for': ['submission_rules']}]})
         write_json(self.root, 'paper/LATEX_TEMPLATE_MANIFEST.json', {'competition': '华为杯'})
@@ -173,8 +175,67 @@ class SubmissionTests(unittest.TestCase):
         write_json(self.root, str(path.relative_to(self.root)), self.data)
         with patch.object(sys, 'argv', ['submission_check.py', '--project', str(self.root), '--record']), patch('builtins.print'):
             self.assertEqual(main(), 0)
-        saved = json.loads(path.read_text())
+        saved = json.loads(path.read_text(encoding="utf-8"))
         self.assertEqual(check_submission(self.root, saved), [])
+
+    def test_chinese_paths_and_json_are_read_with_utf8_locale_independently(self):
+        chinese_pdf = self.root / 'paper/中文队伍.pdf'
+        (self.root / 'paper/A999.pdf').rename(chinese_pdf)
+        (self.root / 'rules.txt').rename(self.root / '中文规则.txt')
+        self.data['deliverables']['final_pdf']['path'] = 'paper/中文队伍.pdf'
+        self.data['submission']['rules']['pdf_name'] = '中文队伍.pdf'
+        self.data['submission']['rules']['sources'] = ['中文规则.txt']
+        self.data['submission']['rules']['identity_tokens'] = ['上海大学']
+        write_json(self.root, 'problem/SOURCE_MANIFEST.json', {'sources': [
+            {'path': '中文规则.txt', 'origin': 'official', 'authoritative_for': ['submission_rules']}]})
+        receipt_path = self.root / 'delivery/COMPILE_RECEIPT.json'
+        receipt = json.loads(receipt_path.read_text(encoding='utf-8'))
+        receipt['attempts'][0]['pdf_path'] = 'paper/中文队伍.pdf'
+        receipt['attempts'][0]['pdf_sha256'] = measure(self.root, 'paper/中文队伍.pdf')['sha256']
+        write_json(self.root, 'delivery/COMPILE_RECEIPT.json', receipt)
+        write_json(self.root, 'delivery/DELIVERY_MANIFEST.json', self.data)
+        with patch.object(locale, 'getencoding', return_value='ascii'):
+            self.assertTrue(is_huawei(self.root))
+            observed, errors = inspect_submission(self.root, self.data)
+            self.assertEqual(errors, [])
+            self.assertEqual(observed['pdf']['path'], 'paper/中文队伍.pdf')
+            with patch.object(sys, 'argv', ['submission_check.py', '--project', str(self.root)]), patch('builtins.print'):
+                self.assertEqual(main(), 0)
+        code = """import json, sys
+from pathlib import Path
+from unittest.mock import patch
+sys.path.insert(0, sys.argv[1])
+import submission_check as s
+root = Path(sys.argv[2])
+s.run_tool = lambda argv: ('Team 999\\fAbstract\\nResult\\f1 Introduction\\nBody\\f' if argv[0] == 'pdftotext' else '' if '-meta' in argv else 'Pages: 3\\n')
+data = json.loads((root / 'delivery/DELIVERY_MANIFEST.json').read_text(encoding='utf-8'))
+assert s.is_huawei(root)
+assert s.inspect_submission(root, data)[1] == []
+with patch.object(sys, 'argv', ['submission_check.py', '--project', str(root)]), patch('builtins.print'):
+    assert s.main() == 0
+print(sys.flags.utf8_mode)
+"""
+        env = dict(os.environ, PYTHONUTF8='0', PYTHONCOERCECLOCALE='0', LC_ALL='C', LANG='C')
+        done = subprocess.run([sys.executable, '-c', code, str(Path(__file__).resolve().parents[1] / '.agents/skills/cumcm-workflow/scripts'), str(self.root)],
+                              env=env, capture_output=True, text=True, encoding='utf-8', timeout=10)
+        self.assertEqual(done.returncode, 0, done.stderr)
+        self.assertEqual(done.stdout.strip(), '0')
+
+    def test_poppler_output_encoding_is_explicit_and_strict(self):
+        argv_seen = []
+        def observe(argv):
+            argv_seen.append(argv)
+            return self.pdf_tool(argv)
+        with patch('submission_check.run_tool', side_effect=observe):
+            inspect_submission(self.root, self.data)
+        self.assertTrue(all(argv[1:3] == ['-enc', 'UTF-8'] for argv in argv_seen))
+        with patch('submission_check.subprocess.run', return_value=subprocess.CompletedProcess([], 0, stdout='中文')) as invoked:
+            self.assertEqual(run_tool(['pdftotext', '-enc', 'UTF-8', 'paper.pdf', '-']), '中文')
+        self.assertEqual(invoked.call_args.kwargs['encoding'], 'utf-8')
+        self.assertEqual(invoked.call_args.kwargs['errors'], 'strict')
+        with patch('submission_check.subprocess.run', side_effect=UnicodeDecodeError('utf-8', b'\xff', 0, 1, 'invalid')):
+            with self.assertRaisesRegex(ValueError, 'PDF inspection failed'):
+                run_tool(['pdftotext', '-enc', 'UTF-8', 'paper.pdf', '-'])
 
 
 @unittest.skipUnless(all(shutil.which(t) for t in ('xelatex', 'pdfinfo', 'pdftotext', 'pdftoppm')), 'XeLaTeX/Poppler required')
@@ -190,24 +251,24 @@ class OfficialCoverTests(unittest.TestCase):
             root = Path(temp)
             build_inputs(root)
             cover_source = r'\documentclass{article}\begin{document}\thispagestyle{empty}University XYZ Team 999\end{document}'
-            (root / 'cover.tex').write_text(cover_source)
+            (root / 'cover.tex').write_text(cover_source, encoding="utf-8")
             done = subprocess.run(['xelatex', '-interaction=nonstopmode', '-halt-on-error', 'cover.tex'], cwd=root, capture_output=True)
             self.assertEqual(done.returncode, 0, done.stdout.decode(errors='replace'))
-            (root / 'official.txt').write_text('synthetic official template; not contest certification')
+            (root / 'official.txt').write_text('synthetic official template; not contest certification', encoding="utf-8")
             write_json(root, 'problem/SOURCE_MANIFEST.json', {'sources': [
                 {'path': 'official.txt', 'origin': 'official', 'authoritative_for': ['paper_template']}]})
             manifest_path = initialize(root, 'Demand model', 2030, 'demand; regression', competition='华为杯', cover_pdf='cover.pdf', template=template)
-            manifest = json.loads(manifest_path.read_text())
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
             self.assertEqual(manifest['mode'], 'official_package_adapter')
             self.assertEqual(manifest['template_id'], template_id)
             self.assertEqual(manifest['official_compliance'], 'unverified')
             self.assertEqual(manifest['competition_year'], 2030)
-            (root / 'paper/sections/00_abstract.tex').write_text('Abstract\nSynthetic result.\\par\n')
+            (root / 'paper/sections/00_abstract.tex').write_text('Abstract\nSynthetic result.\\par\n', encoding="utf-8")
             first = root / manifest['subproblem_sections'][0]['path']
-            first.write_text('\\section{Introduction}\nSynthetic body.\n')
+            first.write_text('\\section{Introduction}\nSynthetic body.\n', encoding="utf-8")
             done = run_script('record_compile.py', '--project', str(root))
             self.assertEqual(done.returncode, 0, done.stdout + done.stderr)
-            receipt = json.loads((root / 'delivery/COMPILE_RECEIPT.json').read_text())
+            receipt = json.loads((root / 'delivery/COMPILE_RECEIPT.json').read_text(encoding="utf-8"))
             # Independently inspect the generated PDF: actual cover first, no identity in body.
             pdf = root / 'paper/main.pdf'
             if not pdf.exists():
@@ -237,7 +298,7 @@ class OfficialCoverTests(unittest.TestCase):
             (root / 'cover.pdf').write_bytes(b'%PDF-test')
             with self.assertRaisesRegex(ValueError, 'declared official'):
                 initialize(root, 'Demand model', 2030, 'demand', competition='华为杯', cover_pdf='cover.pdf')
-            (root / 'official.txt').write_text('template')
+            (root / 'official.txt').write_text('template', encoding="utf-8")
             write_json(root, 'problem/SOURCE_MANIFEST.json', {'sources': [
                 {'path': 'official.txt', 'origin': 'official', 'authoritative_for': ['paper_template']}]})
             with patch('init_latex_paper.subprocess.run', return_value=subprocess.CompletedProcess([], 0, stdout='Pages: 2\n')):

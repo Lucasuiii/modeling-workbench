@@ -54,7 +54,7 @@ class DoctorTests(unittest.TestCase):
     def test_real_json_and_no_project_writes_with_unicode_space_path(self):
         with tempfile.TemporaryDirectory(prefix='诊断 项目 ') as directory:
             root = Path(directory)
-            (root / 'keep.txt').write_text('unchanged')
+            (root / 'keep.txt').write_text('unchanged', encoding="utf-8")
             before = snapshot(root)
             done = cli('doctor.py', '--json', cwd=root)
             self.assertEqual(done.returncode, 0, done.stdout + done.stderr)
@@ -69,10 +69,10 @@ class DoctorTests(unittest.TestCase):
     def test_unsupported_dependency_rejected_even_with_python_optimization(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            (root / 'jsonschema.py').write_text('# synthetic importable incompatible version')
+            (root / 'jsonschema.py').write_text('# synthetic importable incompatible version', encoding="utf-8")
             dist = root / 'jsonschema-99.0.dist-info'
             dist.mkdir()
-            (dist / 'METADATA').write_text('Metadata-Version: 2.1\nName: jsonschema\nVersion: 99.0\n')
+            (dist / 'METADATA').write_text('Metadata-Version: 2.1\nName: jsonschema\nVersion: 99.0\n', encoding="utf-8")
             env = dict(os.environ, PYTHONPATH=str(root), PYTHONOPTIMIZE='1')
             done = subprocess.run([sys.executable, '-B', str(SCRIPTS / 'doctor.py'), '--json'], env=env, capture_output=True, text=True)
             self.assertEqual(done.returncode, 1, done.stdout + done.stderr)
@@ -108,10 +108,10 @@ class ProjectStatusTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             build_valid_project(root)
-            state = json.loads((root / '.cumcm/state.json').read_text())
+            state = json.loads((root / '.cumcm/state.json').read_text(encoding="utf-8"))
             state['stages']['validation'] = 'passed'
             write_json(root, '.cumcm/state.json', state)
-            (root / 'code/solve.py').write_text('print("changed")\n')
+            (root / 'code/solve.py').write_text('print("changed")\n', encoding="utf-8")
             done = cli('project_status.py', '--project', str(root), '--json')
             self.assertEqual(done.returncode, 1, done.stdout + done.stderr)
             report = json.loads(done.stdout)
@@ -122,7 +122,7 @@ class ProjectStatusTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             build_valid_project(root)
-            claims = json.loads((root / 'validation/CLAIM_LEDGER.json').read_text())
+            claims = json.loads((root / 'validation/CLAIM_LEDGER.json').read_text(encoding="utf-8"))
             claims['conclusion_check']['decision'] = 'unreviewed'
             write_json(root, 'validation/CLAIM_LEDGER.json', claims)
             done = cli('project_status.py', '--project', str(root), '--json')
@@ -148,7 +148,7 @@ class ProjectStatusTests(unittest.TestCase):
             root = Path(directory)
             build_valid_project(root)
             path = root / 'validation/CLAIM_LEDGER.json'
-            claims = json.loads(path.read_text())
+            claims = json.loads(path.read_text(encoding="utf-8"))
             claims['claims'][0]['text'] = 'Revised synthetic claim'
             write_json(root, 'validation/CLAIM_LEDGER.json', claims)
             report = inspect_project(root)
@@ -160,7 +160,7 @@ class ProjectStatusTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             build_valid_project(root)
-            state = json.loads((root / '.cumcm/state.json').read_text())
+            state = json.loads((root / '.cumcm/state.json').read_text(encoding="utf-8"))
             state['current_stage'] = 'intake'
             write_json(root, '.cumcm/state.json', state)
             report = inspect_project(root)
@@ -173,7 +173,7 @@ class ProjectStatusTests(unittest.TestCase):
                 root = Path(directory)
                 if contents is not None:
                     (root / '.cumcm').mkdir()
-                    (root / '.cumcm/state.json').write_text(contents)
+                    (root / '.cumcm/state.json').write_text(contents, encoding="utf-8")
                 before = snapshot(root)
                 done = cli('project_status.py', '--project', str(root), '--json')
                 self.assertEqual(done.returncode, 2, done.stdout + done.stderr)

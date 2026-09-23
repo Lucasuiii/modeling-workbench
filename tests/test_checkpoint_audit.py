@@ -1,5 +1,6 @@
 """Action-boundary regressions, using synthetic projects and real recorder commands."""
 import json
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -12,7 +13,7 @@ from build_handoff import build
 
 def model_with_candidates(root, statuses):
     path = root / 'model/MODEL_CONTRACT.json'
-    model = json.loads(path.read_text())
+    model = json.loads(path.read_text(encoding="utf-8"))
     model['components'][0]['candidates'] = [
         {'candidate_id': f'CAND-{i}', 'status': status, 'method': 'enumeration',
          'why_considered': 'finite search', 'discriminating_evidence': ['exact small instance'],
@@ -37,7 +38,7 @@ class CheckpointAudit(unittest.TestCase):
                            lambda: build(root, 'modeling-computation')):
                 with self.assertRaisesRegex(ValueError, 'snapshot'):
                     action()
-            done = run_script('record_run.py', '--project', str(root), '--official', '--', 'python3', 'code/solve.py')
+            done = run_script('record_run.py', '--project', str(root), '--official', '--', sys.executable, 'code/solve.py')
             self.assertNotEqual(done.returncode, 0)
             self.assertFalse((root / 'results/q1_output.json').exists())
             self.assertEqual(confirm(root).returncode, 0)
@@ -62,17 +63,17 @@ class CheckpointAudit(unittest.TestCase):
                     require_human_checkpoint(root, 'model-design')
                 with self.assertRaisesRegex(ValueError, 'unresolved'):
                     build(root, 'modeling-computation')
-                official = run_script('record_run.py', '--project', str(root), '--official', '--', 'python3', 'code/solve.py')
+                official = run_script('record_run.py', '--project', str(root), '--official', '--', sys.executable, 'code/solve.py')
                 self.assertNotEqual(official.returncode, 0)
                 self.assertFalse((root / 'results/q1_output.json').exists())
-                exploratory = run_script('record_run.py', '--project', str(root), '--', 'python3', 'code/solve.py')
+                exploratory = run_script('record_run.py', '--project', str(root), '--', sys.executable, 'code/solve.py')
                 self.assertEqual(exploratory.returncode, 0, exploratory.stderr)
         with tempfile.TemporaryDirectory() as tmp:
             root = make_project(Path(tmp)); model_with_candidates(root, ['selected', 'rejected'])
             done = confirm(root)
             self.assertEqual(done.returncode, 0, done.stderr)
             require_human_checkpoint(root, 'model-design')
-            self.assertEqual(json.loads((root / '.cumcm/state.json').read_text())['stages']['model-design'], 'passed')
+            self.assertEqual(json.loads((root / '.cumcm/state.json').read_text(encoding="utf-8"))['stages']['model-design'], 'passed')
 
     def test_human_reviewer_matches_in_contract_and_event(self):
         for reviewer in (None, 'Alice'):
@@ -80,7 +81,7 @@ class CheckpointAudit(unittest.TestCase):
                 root = make_project(Path(tmp)); model_with_candidates(root, ['selected'])
                 done = confirm(root, *(['--reviewer', reviewer] if reviewer else []))
                 self.assertEqual(done.returncode, 0, done.stderr)
-                check = json.loads((root / 'model/MODEL_CONTRACT.json').read_text())['selection_check']
-                event = json.loads((root / '.cumcm/decisions.jsonl').read_text().splitlines()[-1])
+                check = json.loads((root / 'model/MODEL_CONTRACT.json').read_text(encoding="utf-8"))['selection_check']
+                event = json.loads((root / '.cumcm/decisions.jsonl').read_text(encoding="utf-8").splitlines()[-1])
                 self.assertEqual(check['reviewer'], reviewer or 'user')
                 self.assertEqual(event['reviewer'], check['reviewer'])

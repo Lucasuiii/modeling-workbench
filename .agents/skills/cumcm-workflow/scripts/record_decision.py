@@ -8,11 +8,13 @@ that iteration never requires hand-editing .cumcm/state.json."""
 from __future__ import annotations
 
 import argparse
-import fcntl
+import errno
 import hashlib
 import json
 import os
 import tempfile
+import time
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -51,6 +53,44 @@ def write_json_atomic(path: Path, payload: dict) -> None:
 CHECKPOINT_PATHS = {"model-design": ("model/MODEL_CONTRACT.json", "selection_check"),
                     "validation": ("validation/CLAIM_LEDGER.json", "conclusion_check"),
                     "delivery": ("delivery/DELIVERY_MANIFEST.json", "final_check")}
+
+
+@contextmanager
+def decision_lock(path: Path):
+    """Hold the same cross-process lock through all decision writes."""
+    with path.open("a+b") as stream:
+        if os.name == "nt":
+            import msvcrt
+
+            # msvcrt.locking locks from the current file position. A real byte
+            # is required; two creators may append it concurrently, but both
+            # still lock byte zero and never truncate the lock file.
+            stream.seek(0, os.SEEK_END)
+            if stream.tell() == 0:
+                stream.write(b"\0")
+                stream.flush()
+            while True:
+                stream.seek(0)
+                try:
+                    msvcrt.locking(stream.fileno(), msvcrt.LK_NBLCK, 1)
+                    break
+                except OSError as exc:
+                    if exc.errno not in (errno.EACCES, errno.EAGAIN):
+                        raise
+                    time.sleep(0.05)
+            try:
+                yield
+            finally:
+                stream.seek(0)
+                msvcrt.locking(stream.fileno(), msvcrt.LK_UNLCK, 1)
+        else:
+            import fcntl
+
+            fcntl.flock(stream, fcntl.LOCK_EX)
+            try:
+                yield
+            finally:
+                fcntl.flock(stream, fcntl.LOCK_UN)
 
 
 def reopen(root: Path, stage: str) -> None:
@@ -97,10 +137,13 @@ def main() -> int:
         parser.error(f"project is not a directory: {root}")
     log_path = root / ".cumcm" / "decisions.jsonl"
     log_path.parent.mkdir(parents=True, exist_ok=True)
-    # Keep this descriptor alive through checkpoint, append-only log, snapshot,
-    # and state writes. flock is released automatically on every exit path.
-    lock_stream = (root / ".cumcm" / "decisions.lock").open("a+")
-    fcntl.flock(lock_stream, fcntl.LOCK_EX)
+    # Include allocation and checkpoint validation in the same transaction as
+    # the append-only log, snapshot, and state writes.
+    with decision_lock(root / ".cumcm" / "decisions.lock"):
+        return _record_decision(args, root, parser, log_path)
+
+
+def _record_decision(args, root: Path, parser: argparse.ArgumentParser, log_path: Path) -> int:
     events = load_events(log_path)
     if not args.decision_id:
         used = {event["decision_id"] for event in events}

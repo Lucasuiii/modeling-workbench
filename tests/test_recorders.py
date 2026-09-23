@@ -365,7 +365,7 @@ class ProvenanceIntegrityTests(unittest.TestCase):
             (project / "data" / "cleaned.csv").write_text("a,b\n9,9\n", encoding="utf-8")
             findings, _ = check_project(project, "computation")
             self.assertIn("RUN-E020", {item.rule_id for item in findings})
-            self.assertEqual((project / "runs/RUN-IN/inputs/data/cleaned.csv").read_text(), "a,b\n1,2\n")
+            self.assertEqual((project / "runs/RUN-IN/inputs/data/cleaned.csv").read_text(encoding="utf-8"), "a,b\n1,2\n")
 
 
 class LineageTests(unittest.TestCase):

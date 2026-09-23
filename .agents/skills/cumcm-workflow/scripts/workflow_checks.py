@@ -1082,10 +1082,22 @@ def check_run(data: Any, root: Path, rel_path: str, capability_ids: set[str], su
     # Independent of the one above: an official run whose assertions are all declared AND
     # one of them failed used to report only the provenance warning, because these were
     # branches of one chain. A failed check must be reported whoever wrote the verdict.
-    if isinstance(assertions, list) and any(isinstance(item, dict) and item.get("passed") is not True for item in assertions):
+    failed_assertions = [
+        (index, item) for index, item in enumerate(assertions, 1)
+        if isinstance(item, dict) and item.get("passed") is not True
+    ] if isinstance(assertions, list) else []
+    if failed_assertions:
         # A failed assertion inside an exploratory run is a finding about the experiment,
         # not about the formal chain, so it never blocks.
-        findings.append(finding("RUN-E008", sev, "numerical", "computation", rel_path, "one or more recorded assertions failed"))
+        labels = []
+        for index, item in failed_assertions:
+            name = item.get("name")
+            safe_name = ""
+            if isinstance(name, str):
+                safe_name = "".join(char if char.isprintable() else "?" for char in name.strip())[:80]
+            labels.append(f"#{index} ({safe_name or 'unnamed'})")
+        findings.append(finding("RUN-E008", sev, "numerical", "computation", rel_path,
+                                "failed assertions: " + ", ".join(labels)))
     return findings
 
 

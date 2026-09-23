@@ -27,6 +27,30 @@ jobs:
               Draft202012Validator.check_schema(json.loads(path.read_text(encoding='utf-8')))
           PY
 
+  windows-contracts:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+      - run: python -m pip install --requirement requirements-ci.txt
+      - run: python -m unittest discover -s tests -p 'test_*.py' -v
+      - run: python -m compileall -q .agents/skills/cumcm-workflow/scripts tests
+      - name: Validate all 21 JSON Schemas
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from jsonschema import Draft202012Validator
+          paths = list(Path('.agents/skills/cumcm-workflow/schemas').glob('*.json'))
+          assert len(paths) == 21, f'expected 21 schemas, found {len(paths)}'
+          for path in paths:
+              Draft202012Validator.check_schema(json.loads(path.read_text(encoding='utf-8')))
+          PY
+
   recorders-with-latex:
     # The compile tests skip themselves when no engine is present; this job installs
     # one so that record_compile.py is exercised against a real xelatex run, and the

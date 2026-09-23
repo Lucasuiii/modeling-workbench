@@ -22,7 +22,7 @@ class RedoRegressionTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             build_paper_ready_project(root)
-            plan = json.loads((root / 'paper/PAPER_PLAN.json').read_text())
+            plan = json.loads((root / 'paper/PAPER_PLAN.json').read_text(encoding="utf-8"))
             plan['paper_structure'] = [{'subproblem_ids': ['Q1'], 'claim_ids': ['CLM-Q1-001']}]
             write_json(root, 'paper/PAPER_PLAN.json', plan)
             write_json(root, 'paper/LATEX_TEMPLATE_MANIFEST.json', {'subproblem_sections': [
@@ -57,14 +57,14 @@ class CompileRegressionTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         self.root = make_project(Path(self.temp.name))
-        (self.root / 'paper/main.tex').write_text(MINIMAL_TEX)
+        (self.root / 'paper/main.tex').write_text(MINIMAL_TEX, encoding="utf-8")
         write_json(self.root, 'paper/LATEX_TEMPLATE_MANIFEST.json', {
             'engine': 'xelatex', 'main_path': 'paper/main.tex', 'required_files': ['paper/main.tex']})
 
     def compile(self, *args):
         result = run_script('record_compile.py', '--project', str(self.root), *args)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        return json.loads((self.root / 'delivery/COMPILE_RECEIPT.json').read_text())
+        return json.loads((self.root / 'delivery/COMPILE_RECEIPT.json').read_text(encoding="utf-8"))
 
     def quality(self, digest):
         artifact = {'path': 'paper/main.pdf', 'sha256': digest}
@@ -77,20 +77,20 @@ class CompileRegressionTests(unittest.TestCase):
         write_json(self.root, 'paper/PAPER_QUALITY_REPORT.json', data)
 
     def test_final_log_resolves_first_pass_reference_but_keeps_real_failure(self):
-        (self.root / 'paper/main.tex').write_text(r'\documentclass{article}\begin{document}See \ref{x}.\section{X}\label{x}\end{document}')
+        (self.root / 'paper/main.tex').write_text(r'\documentclass{article}\begin{document}See \ref{x}.\section{X}\label{x}\end{document}', encoding="utf-8")
         receipt = self.compile()
         self.assertNotIn('undefined', ' '.join(receipt['attempts'][0]['warnings']))
-        self.assertIn('undefined', (self.root / 'delivery/compile.log').read_text())
-        (self.root / 'paper/main.tex').write_text(r'\documentclass{article}\begin{document}See \ref{missing} and \cite{absent}.\end{document}')
+        self.assertIn('undefined', (self.root / 'delivery/compile.log').read_text(encoding="utf-8"))
+        (self.root / 'paper/main.tex').write_text(r'\documentclass{article}\begin{document}See \ref{missing} and \cite{absent}.\end{document}', encoding="utf-8")
         receipt = self.compile()
         self.assertIn('undefined', ' '.join(receipt['attempts'][0]['warnings']))
 
     def test_no_render_clears_pages_and_preserves_failed_and_stale_visual_checks(self):
         self.compile()
         self.quality(sha256_file(self.root / 'paper/main.pdf'))
-        (self.root / 'paper/main.tex').write_text(MINIMAL_TEX.replace('\\end{document}', 'Changed.\\end{document}'))
+        (self.root / 'paper/main.tex').write_text(MINIMAL_TEX.replace('\\end{document}', 'Changed.\\end{document}'), encoding="utf-8")
         self.compile('--no-render', '--update-quality')
-        quality = json.loads((self.root / 'paper/PAPER_QUALITY_REPORT.json').read_text())
+        quality = json.loads((self.root / 'paper/PAPER_QUALITY_REPORT.json').read_text(encoding="utf-8"))
         self.assertEqual(quality['layout_report']['rendered_pages'], [])
         self.assertFalse((self.root / '.cumcm/tmp/pages').exists())
         checks = {c['check_id']: c for c in quality['layout_report']['checks']}
@@ -110,7 +110,7 @@ class CompileRegressionTests(unittest.TestCase):
     def test_preserved_visual_pass_requires_its_own_current_binding(self):
         self.compile('--no-render')
         self.quality(sha256_file(self.root / 'paper/main.pdf'))
-        quality = json.loads((self.root / 'paper/PAPER_QUALITY_REPORT.json').read_text())
+        quality = json.loads((self.root / 'paper/PAPER_QUALITY_REPORT.json').read_text(encoding="utf-8"))
         check = quality['layout_report']['checks'][1]
         check['artifact'] = {'path': 'paper/main.pdf', 'sha256': '0' * 64}
         findings = check_paper_quality(quality, self.root, 'paper/PAPER_QUALITY_REPORT.json', set())
@@ -124,7 +124,7 @@ class CompileRegressionTests(unittest.TestCase):
         self.quality(sha256_file(self.root / 'paper/main.pdf'))
         with patch.object(sys, 'argv', ['record_compile.py', '--project', str(self.root), '--update-quality']), patch.object(rc, 'render_pages', return_value=[]):
             self.assertEqual(rc.main(), 0)
-        quality = json.loads((self.root / 'paper/PAPER_QUALITY_REPORT.json').read_text())
+        quality = json.loads((self.root / 'paper/PAPER_QUALITY_REPORT.json').read_text(encoding="utf-8"))
         self.assertEqual(quality['layout_report']['rendered_pages'], [])
         self.assertTrue(any(c['check_id'] == 'FIG-OVERLAP' for c in quality['layout_report']['checks']))
 
@@ -134,9 +134,9 @@ class CompileRegressionTests(unittest.TestCase):
         shutil.copy2(self.root / 'paper/main.pdf', self.root / 'figures/plot.pdf')
         paper = self.root / 'paper'
         (paper / 'nested').mkdir()
-        (paper / 'nested/included.tex').write_text('Actual included chapter.\n')
-        (paper / 'unused.tex').write_text('Unused file.\n')
-        (paper / 'main.tex').write_text(r'\documentclass{article}\usepackage{graphicx}\begin{document}\input{nested/included}\includegraphics[width=1cm]{../figures/plot.pdf}\end{document}')
+        (paper / 'nested/included.tex').write_text('Actual included chapter.\n', encoding="utf-8")
+        (paper / 'unused.tex').write_text('Unused file.\n', encoding="utf-8")
+        (paper / 'main.tex').write_text(r'\documentclass{article}\usepackage{graphicx}\begin{document}\input{nested/included}\includegraphics[width=1cm]{../figures/plot.pdf}\end{document}', encoding="utf-8")
         receipt = self.compile('--no-render')
         self.assertIn('paper/nested/included.tex', receipt['source_snapshot']['files'])
         self.assertNotIn('paper/unused.tex', receipt['source_snapshot']['files'])
@@ -152,14 +152,14 @@ class CompileRegressionTests(unittest.TestCase):
                 archive.extractall(extracted)
             result = subprocess.run(['xelatex', '-halt-on-error', '-interaction=nonstopmode', 'main.tex'], cwd=Path(extracted) / 'paper', capture_output=True)
             self.assertEqual(result.returncode, 0, result.stdout.decode(errors='replace'))
-        (paper / 'nested/included.tex').write_text('Changed dependency.\n')
+        (paper / 'nested/included.tex').write_text('Changed dependency.\n', encoding="utf-8")
         with self.assertRaisesRegex(ValueError, 'stale'):
             build_archives(self.root, manifest)
         self.assertIn('delivery', build_plan(self.root, ['paper/nested/included.tex'])['actions'])
 
     def test_failed_new_compile_retires_successful_receipt(self):
         self.compile()
-        (self.root / 'paper/main.tex').write_text(r'\documentclass{article}\begin{document}\undefinedcommand\end{document}')
+        (self.root / 'paper/main.tex').write_text(r'\documentclass{article}\begin{document}\undefinedcommand\end{document}', encoding="utf-8")
         result = run_script('record_compile.py', '--project', str(self.root))
         self.assertNotEqual(result.returncode, 0)
         self.assertFalse((self.root / 'delivery/COMPILE_RECEIPT.json').exists())
@@ -194,6 +194,6 @@ class MissingEvidenceTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             fls = root / 'main.fls'
-            fls.write_text('INPUT /some/external/custom.tex\n')
+            fls.write_text('INPUT /some/external/custom.tex\n', encoding="utf-8")
             with self.assertRaisesRegex(ValueError, 'external project dependency'):
                 observed_sources(root, root, fls, [])

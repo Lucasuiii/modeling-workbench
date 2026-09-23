@@ -47,8 +47,9 @@ def measure(root: Path, value: str) -> dict:
 
 def run_tool(argv: list[str]) -> str:
     try:
-        return subprocess.run(argv, check=True, capture_output=True, text=True, timeout=60).stdout
-    except (OSError, subprocess.SubprocessError) as exc:
+        return subprocess.run(argv, check=True, capture_output=True, text=True,
+                              encoding="utf-8", errors="strict", timeout=60).stdout
+    except (OSError, subprocess.SubprocessError, UnicodeError) as exc:
         raise ValueError(f"PDF inspection failed: {exc}") from exc
 
 
@@ -71,7 +72,7 @@ def inspect_submission(root: Path, delivery: dict) -> tuple[dict, list[str]]:
     rules = delivery["submission"]["rules"]
     if not isinstance(rules, dict):
         raise ValueError("submission.rules must be an object")
-    source_manifest = json.loads((root / "problem/SOURCE_MANIFEST.json").read_text())
+    source_manifest = json.loads((root / "problem/SOURCE_MANIFEST.json").read_text(encoding="utf-8"))
     official = {item["path"] for item in classified_official_materials(source_manifest.get("sources", []))
                 if item["role"] in {"paper_template", "format_or_submission_rule"}}
     sources = rules["sources"]
@@ -85,7 +86,7 @@ def inspect_submission(root: Path, delivery: dict) -> tuple[dict, list[str]]:
     before = measure(root, pdf_rel)
     errors = []
     receipt_rel = delivery["compile_receipt_path"]
-    receipt = json.loads(local_file(root, receipt_rel).read_text())
+    receipt = json.loads(local_file(root, receipt_rel).read_text(encoding="utf-8"))
     selected = next((a for a in receipt["attempts"] if a.get("attempt_id") == receipt["selected_attempt_id"]), None)
     if not selected or selected.get("exit_code") != 0:
         raise ValueError("submission requires a selected successful compilation")
@@ -94,12 +95,12 @@ def inspect_submission(root: Path, delivery: dict) -> tuple[dict, list[str]]:
         errors.append("submission PDF bytes differ from the selected compiled PDF")
     if pdf.name != rules["pdf_name"]:
         errors.append("final PDF filename differs from the declared official submission name")
-    info = run_tool(["pdfinfo", str(pdf)])
+    info = run_tool(["pdfinfo", "-enc", "UTF-8", str(pdf)])
     match = re.search(r"^Pages:\s+(\d+)\s*$", info, re.MULTILINE)
     if not match:
         raise ValueError("pdfinfo did not report page count")
     count = int(match.group(1))
-    pages = run_tool(["pdftotext", "-layout", str(pdf), "-"]).split("\f")
+    pages = run_tool(["pdftotext", "-enc", "UTF-8", "-layout", str(pdf), "-"]).split("\f")
     if pages and not pages[-1].strip():
         pages.pop()
     if len(pages) != count or any(not text.strip() for text in pages):
@@ -111,7 +112,7 @@ def inspect_submission(root: Path, delivery: dict) -> tuple[dict, list[str]]:
     if not isinstance(tokens, list) or not tokens or any(not isinstance(t, str) or not compact(t) for t in tokens):
         raise ValueError("identity_tokens must list the actual non-empty team/person/institution identifiers")
     # XMP and the document information dictionary are both outside the cover.
-    metadata = info + run_tool(["pdfinfo", "-meta", str(pdf)])
+    metadata = info + run_tool(["pdfinfo", "-enc", "UTF-8", "-meta", str(pdf)])
     for token in tokens:
         if identity_text(token) in identity_text(metadata):
             errors.append("identity information found in PDF metadata")
@@ -170,7 +171,7 @@ def is_huawei(root: Path) -> bool:
     path = root / "paper/LATEX_TEMPLATE_MANIFEST.json"
     if not path.is_file():
         return False
-    name = str(json.loads(path.read_text()).get("competition", "")).casefold()
+    name = str(json.loads(path.read_text(encoding="utf-8")).get("competition", "")).casefold()
     return any(token in name for token in ("华为", "huawei", "研究生数学建模", "gmcm", "cpgmcm", "cpmcm"))
 
 
@@ -194,7 +195,7 @@ def main() -> int:
     root = args.project.resolve()
     try:
         path = root / MANIFEST
-        data = json.loads(path.read_text())
+        data = json.loads(path.read_text(encoding="utf-8"))
         observed, errors = inspect_submission(root, data)
         old = data["submission"].get("recorded")
         if old is not None and old != observed:

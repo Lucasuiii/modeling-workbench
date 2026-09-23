@@ -19,11 +19,11 @@ class HumanStops(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = make_project(Path(tmp))
             path = root / 'model/MODEL_CONTRACT.json'
-            model = json.loads(path.read_text())
+            model = json.loads(path.read_text(encoding="utf-8"))
             model['selection_check']['reviewer_kind'] = 'same_context_model'
-            path.write_text(json.dumps(model))
+            path.write_text(json.dumps(model), encoding="utf-8")
             for mode in ('working', 'finalizing'):
-                state = json.loads((root / '.cumcm/state.json').read_text())
+                state = json.loads((root / '.cumcm/state.json').read_text(encoding="utf-8"))
                 state['mode'] = mode
                 write_json(root, '.cumcm/state.json', state)
                 findings, summary = check_project(root, 'model-design', 'enforce')
@@ -39,8 +39,8 @@ class HumanStops(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = make_project(Path(tmp))
             path = root / 'model/MODEL_CONTRACT.json'
-            data = json.loads(path.read_text()); data['selection_check']['decision'] = 'unreviewed'
-            path.write_text(json.dumps(data))
+            data = json.loads(path.read_text(encoding="utf-8")); data['selection_check']['decision'] = 'unreviewed'
+            path.write_text(json.dumps(data), encoding="utf-8")
             _, report = check_project(root, 'model-design', 'preflight')
             self.assertEqual(report['gate_status'], 'awaiting_review')
             self.assertEqual(report['blocking_error_count'], 0)
@@ -48,11 +48,11 @@ class HumanStops(unittest.TestCase):
     def test_confirmation_fills_checkpoint_and_advances_without_manual_state(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = make_project(Path(tmp))
-            state = json.loads((root / '.cumcm/state.json').read_text())
+            state = json.loads((root / '.cumcm/state.json').read_text(encoding="utf-8"))
             for stage in ('intake', 'problem-analysis'):
                 state['stages'][stage] = 'passed'
             write_json(root, '.cumcm/state.json', state)
-            model = json.loads((root / 'model/MODEL_CONTRACT.json').read_text())
+            model = json.loads((root / 'model/MODEL_CONTRACT.json').read_text(encoding="utf-8"))
             model['selection_check']['decision'] = 'unreviewed'
             model['components'][0]['candidates'] = [{'candidate_id': 'CAND-ENUM', 'status': 'selected'}]
             write_json(root, 'model/MODEL_CONTRACT.json', model)
@@ -60,11 +60,11 @@ class HumanStops(unittest.TestCase):
                               '--decision', 'accepted', '--confirm-human', '--task-turn-ref', 'user-turn-2',
                               '--summary', 'User accepted both presented candidates and scope')
             self.assertEqual(done.returncode, 0, done.stderr)
-            state = json.loads((root / '.cumcm/state.json').read_text())
+            state = json.loads((root / '.cumcm/state.json').read_text(encoding="utf-8"))
             self.assertEqual(state['current_stage'], 'computation')
             self.assertEqual(state['stages']['model-design'], 'passed')
             require_human_checkpoint(root, 'model-design')
-            model = json.loads((root / 'model/MODEL_CONTRACT.json').read_text())
+            model = json.loads((root / 'model/MODEL_CONTRACT.json').read_text(encoding="utf-8"))
             model['components'][0]['scope'] += ' changed'
             write_json(root, 'model/MODEL_CONTRACT.json', model)
             with self.assertRaisesRegex(ValueError, 'changed after approval'):
@@ -79,7 +79,7 @@ class HumanStops(unittest.TestCase):
                        '--task-turn-ref', 'user-turn', '--summary', 'accepted')
             self.assertEqual(run_script('record_decision.py', *command).returncode, 0)
             path = root / 'model/MODEL_CONTRACT.json'
-            model = json.loads(path.read_text()); model['components'][0]['scope'] += ' changed'
+            model = json.loads(path.read_text(encoding="utf-8")); model['components'][0]['scope'] += ' changed'
             model['components'][0]['candidates'] = [{'candidate_id': 'CAND-ENUM', 'status': 'selected'}]
             write_json(root, 'model/MODEL_CONTRACT.json', model)
             self.assertNotEqual(run_script('record_decision.py', *command).returncode, 0)
@@ -101,7 +101,7 @@ class HumanStops(unittest.TestCase):
             write_json(root, '.cumcm/snapshots/model-design.json', {
                 'artifacts': [{'path': rel, 'sha256': sha256(root / rel)} for rel in paths]})
             require_human_checkpoint(root, 'model-design')
-            (root / 'code/solve.py').write_text('changed')
+            (root / 'code/solve.py').write_text('changed', encoding="utf-8")
             with self.assertRaisesRegex(ValueError, 'changed after approval'):
                 require_human_checkpoint(root, 'model-design')
 
@@ -127,14 +127,14 @@ class HumanStops(unittest.TestCase):
     def test_self_review_and_open_p0_cannot_build_paper_handoff(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp); build_valid_project(root)
-            path = root / 'validation/CLAIM_LEDGER.json'; claims = json.loads(path.read_text())
+            path = root / 'validation/CLAIM_LEDGER.json'; claims = json.loads(path.read_text(encoding="utf-8"))
             claims['conclusion_check']['reviewer_kind'] = 'same_context_model'
-            path.write_text(json.dumps(claims))
+            path.write_text(json.dumps(claims), encoding="utf-8")
             with self.assertRaisesRegex(ValueError, 'explicit decision'):
                 build_handoff(root, 'validation-paper', 'reviewer-task')
-            claims['conclusion_check']['reviewer_kind'] = 'human_user'; path.write_text(json.dumps(claims))
+            claims['conclusion_check']['reviewer_kind'] = 'human_user'; path.write_text(json.dumps(claims), encoding="utf-8")
             write_accepted_snapshot(root, 'validation', ['validation/CLAIM_LEDGER.json'])
-            review = json.loads((root / 'validation/INDEPENDENT_REVIEW_RESULT.json').read_text())
+            review = json.loads((root / 'validation/INDEPENDENT_REVIEW_RESULT.json').read_text(encoding="utf-8"))
             review['verdict'] = 'revision_required'
             write_json(root, 'validation/INDEPENDENT_REVIEW_RESULT.json', review)
             with self.assertRaisesRegex(ValueError, 'validation is blocked'):
@@ -155,13 +155,13 @@ class RecorderAndRefresh(unittest.TestCase):
             for child in children:
                 out, err = child.communicate(timeout=30)
                 self.assertEqual(child.returncode, 0, out.decode() + err.decode())
-            events = [json.loads(line) for line in (root / '.cumcm/decisions.jsonl').read_text().splitlines()]
+            events = [json.loads(line) for line in (root / '.cumcm/decisions.jsonl').read_text(encoding="utf-8").splitlines()]
             ids = [event['decision_id'] for event in events]
             self.assertEqual(len(ids), 2)
             self.assertEqual(len(set(ids)), 2)
-            snapshot = json.loads((root / '.cumcm/snapshots/model-design.json').read_text())
-            state = json.loads((root / '.cumcm/state.json').read_text())
-            checkpoint = json.loads((root / 'model/MODEL_CONTRACT.json').read_text())
+            snapshot = json.loads((root / '.cumcm/snapshots/model-design.json').read_text(encoding="utf-8"))
+            state = json.loads((root / '.cumcm/state.json').read_text(encoding="utf-8"))
+            checkpoint = json.loads((root / 'model/MODEL_CONTRACT.json').read_text(encoding="utf-8"))
             self.assertIn(snapshot['decision_id'], ids)
             self.assertEqual(state['stages']['model-design'], 'passed')
             self.assertEqual(checkpoint['selection_check']['decision'], 'accepted')
@@ -169,8 +169,8 @@ class RecorderAndRefresh(unittest.TestCase):
     def test_parallel_runs_reserve_distinct_directories(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = make_project(Path(tmp))
-            (root / 'code/a.py').write_text("import time; time.sleep(.2); print('A')")
-            (root / 'code/b.py').write_text("import time; time.sleep(.2); print('B')")
+            (root / 'code/a.py').write_text("import time; time.sleep(.2); print('A')", encoding="utf-8")
+            (root / 'code/b.py').write_text("import time; time.sleep(.2); print('B')", encoding="utf-8")
             children = [subprocess.Popen([sys.executable, str(SCRIPTS / 'record_run.py'), '--project', str(root),
                          '--', sys.executable, f'code/{name}.py'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                         for name in ('a', 'b')]
@@ -179,16 +179,16 @@ class RecorderAndRefresh(unittest.TestCase):
                 self.assertEqual(child.returncode, 0, err.decode())
             manifests = list((root / 'runs').glob('*/RUN_MANIFEST.json'))
             self.assertEqual(len(manifests), 2)
-            self.assertEqual({(p.parent / 'stdout.log').read_text().strip() for p in manifests}, {'A', 'B'})
+            self.assertEqual({(p.parent / 'stdout.log').read_text(encoding="utf-8").strip() for p in manifests}, {'A', 'B'})
 
     def test_existing_unfinished_run_is_never_reused(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = make_project(Path(tmp)); reserved = root / 'runs/RUN-001'; reserved.mkdir(parents=True)
-            (reserved / 'stdout.log').write_text('preserve')
+            (reserved / 'stdout.log').write_text('preserve', encoding="utf-8")
             done = run_script('record_run.py', '--project', str(root), '--', sys.executable, 'code/solve.py')
             self.assertEqual(done.returncode, 0, done.stderr)
             self.assertTrue((root / 'runs/RUN-002/RUN_MANIFEST.json').exists())
-            self.assertEqual((reserved / 'stdout.log').read_text(), 'preserve')
+            self.assertEqual((reserved / 'stdout.log').read_text(encoding="utf-8"), 'preserve')
 
     def test_refresh_is_idempotent_and_never_rebaselines_sources(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -196,7 +196,7 @@ class RecorderAndRefresh(unittest.TestCase):
             before = source.read_bytes()
             write_json(root, 'delivery/DELIVERY_MANIFEST.json', {'files': []})
             delivery = root / 'delivery/DELIVERY_MANIFEST.json'; initial = delivery.read_bytes()
-            (root / 'problem/official/problem.txt').write_text('modified official bytes')
+            (root / 'problem/official/problem.txt').write_text('modified official bytes', encoding="utf-8")
             done = run_script('refresh_evidence.py', '--project', str(root))
             self.assertEqual(done.returncode, 0, done.stderr)
             self.assertEqual(source.read_bytes(), before)
@@ -207,7 +207,7 @@ class RecorderAndRefresh(unittest.TestCase):
             base = Path(tmp)
             root = make_project(base)
             outside = base / 'outside.txt'
-            outside.write_text('private')
+            outside.write_text('private', encoding="utf-8")
             for declared in ('../outside.txt', str(outside.resolve())):
                 with self.subTest(path=declared):
                     write_json(root, 'delivery/DELIVERY_MANIFEST.json', {
@@ -231,7 +231,7 @@ class ActualArchives(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             (root / 'paper').mkdir(); (root / 'delivery').mkdir()
-            (root / 'paper/main.tex').write_text('main')
+            (root / 'paper/main.tex').write_text('main', encoding="utf-8")
             (root / 'paper/figure.pdf').write_bytes(b'figure')
             manifest = {'deliverables': {
                 'computation_source': {'archive': 'delivery/all.zip'},
@@ -249,9 +249,9 @@ class ActualArchives(unittest.TestCase):
             root = Path(tmp)
             for directory in ('code', 'data', 'results', 'paper/figures', 'delivery'):
                 (root / directory).mkdir(parents=True)
-            (root / 'code/solve.py').write_text("from pathlib import Path\np=Path(__file__).resolve().parents[1]\nprint((p/'data/input.txt').read_text())\n")
-            (root / 'data/input.txt').write_text('42')
-            (root / 'paper/figures/plot.py').write_text('# plotting source')
+            (root / 'code/solve.py').write_text("from pathlib import Path\np=Path(__file__).resolve().parents[1]\nprint((p/'data/input.txt').read_text(encoding='utf-8'))\n", encoding="utf-8")
+            (root / 'data/input.txt').write_text('42', encoding="utf-8")
+            (root / 'paper/figures/plot.py').write_text('# plotting source', encoding="utf-8")
             manifest = {'deliverables': {'computation_source': {'entrypoint': 'code/solve.py', 'archive': 'delivery/support.zip'}},
                         'files': [{'path': 'code/solve.py', 'role': 'computation_source'},
                                   {'path': 'data/input.txt', 'role': 'supporting_evidence'}]}
@@ -270,12 +270,12 @@ class ActualArchives(unittest.TestCase):
             done = run_script('refresh_evidence.py', '--project', str(root), '--only', 'delivery', '--package')
             self.assertEqual(done.returncode, 0, done.stderr)
             self.assertEqual(check_archives(root, manifest), [])
-            refreshed = json.loads((root / 'delivery/DELIVERY_MANIFEST.json').read_text())
+            refreshed = json.loads((root / 'delivery/DELIVERY_MANIFEST.json').read_text(encoding="utf-8"))
             self.assertTrue(all(f.get('sha256') for f in refreshed['files']))
             with zipfile.ZipFile(root / 'delivery/support.zip') as z:
                 z.extractall(root / 'clean')
             done = subprocess.run([sys.executable, str(root / 'clean/code/solve.py')], capture_output=True, text=True)
             self.assertEqual(done.returncode, 0, done.stderr)
             self.assertEqual(done.stdout.strip(), '42')
-            (root / 'data/input.txt').write_text('43')
+            (root / 'data/input.txt').write_text('43', encoding="utf-8")
             self.assertTrue(any('stale member data/input.txt' in x for x in check_archives(root, manifest)))

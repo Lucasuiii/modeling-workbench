@@ -44,7 +44,7 @@ class ProvenanceRegressions(unittest.TestCase):
             rel='model-env/Scripts/python.exe' if os.name=='nt' else 'model-env/bin/python'
             done=run_script('record_run.py','--project',str(p),'--run-id','RUNTIME','--',rel,'code/solve.py')
             self.assertEqual(done.returncode,0,done.stdout+done.stderr)
-            manifest=json.loads((p/'runs/RUNTIME/RUN_MANIFEST.json').read_text())
+            manifest=json.loads((p/'runs/RUNTIME/RUN_MANIFEST.json').read_text(encoding="utf-8"))
             self.assertIn(str(p/rel),manifest['implementation']['runtime'])
             self.assertEqual(manifest['argv'][0],rel)
 
@@ -53,7 +53,7 @@ class ProvenanceRegressions(unittest.TestCase):
             with self.subTest(role=role), tempfile.TemporaryDirectory() as d:
                 p=Path(d);build_valid_project(p)
                 self.assertTrue(resolve_official_computation(p))
-                manifest=json.loads((p/'runs/RUN-Q1-001/RUN_MANIFEST.json').read_text())
+                manifest=json.loads((p/'runs/RUN-Q1-001/RUN_MANIFEST.json').read_text(encoding="utf-8"))
                 target=p/manifest[role][0]['path']
                 target.write_bytes(target.read_bytes()+b' tampered')
                 findings, _ = check_project(p, 'computation')
@@ -73,7 +73,7 @@ class ProvenanceRegressions(unittest.TestCase):
                 code='from pathlib import Path\nPath('+repr(target)+').touch()\n'
                 if kind=='assertion':
                     code+='Path("results/q1_output.json").write_text("{}")\n'
-                (p/'code/touch.py').write_text(code)
+                (p/'code/touch.py').write_text(code, encoding="utf-8")
                 args=['--assert-file','results/assertions.json'] if kind=='assertion' else []
                 done=run_script('record_run.py','--project',str(p),'--run-id','TOUCH','--output','results/q1_output.json:claim',*args,'--',sys.executable,'code/touch.py')
                 self.assertNotEqual(done.returncode,0,done.stdout+done.stderr)
@@ -84,7 +84,7 @@ class ProvenanceRegressions(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             p=make_project(Path(d));record_official(p)
             old=(p/'results/q1_output.json').read_bytes()
-            (p/'code/sleep.py').write_text('import time; time.sleep(3)')
+            (p/'code/sleep.py').write_text('import time; time.sleep(3)', encoding="utf-8")
             done=run_script('record_run.py','--project',str(p),'--run-id','TIMEOUT','--timeout','0.1','--output','results/q1_output.json:claim','--',sys.executable,'code/sleep.py')
             self.assertNotEqual(done.returncode,0)
             self.assertEqual((p/'results/q1_output.json').read_bytes(),old)
@@ -101,7 +101,7 @@ class ProvenanceRegressions(unittest.TestCase):
 
     def test_matlab_entry_requires_explicit_driver(self):
         with tempfile.TemporaryDirectory() as d:
-            p=Path(d);(p/'driver.m').write_text('disp(1);')
+            p=Path(d);(p/'driver.m').write_text('disp(1);', encoding="utf-8")
             self.assertEqual(infer_entry_point(p,['matlab','-batch',"run('driver.m')"],[]),'driver.m')
             for expression in ('disp(1)', "disp('driver.m')", "run('driver.m'); disp(2)"):
                 with self.assertRaises(SystemExit):
@@ -130,7 +130,7 @@ class ProvenanceRegressions(unittest.TestCase):
             done=run_script('record_run.py','--project',str(p),'--rerun','META','--run-id','META2')
             self.assertEqual(done.returncode,0,done.stderr)
             for run in ('META','META2'):
-                m=json.loads((p/f'runs/{run}/RUN_MANIFEST.json').read_text())
+                m=json.loads((p/f'runs/{run}/RUN_MANIFEST.json').read_text(encoding="utf-8"))
                 self.assertEqual(m['seeds'],[{'name':'seed','value':'42','source':'declared'}])
                 self.assertEqual(m['implementation']['matlab_toolboxes'],['Optimization Toolbox'])
 
@@ -141,7 +141,7 @@ class ProvenanceRegressions(unittest.TestCase):
             self.assertEqual(first.returncode,0,first.stderr)
             done=run_script('record_run.py','--project',str(p),'--rerun','META','--run-id','META2','--seed','99','--toolbox','new')
             self.assertEqual(done.returncode,0,done.stderr)
-            m=json.loads((p/'runs/META2/RUN_MANIFEST.json').read_text())
+            m=json.loads((p/'runs/META2/RUN_MANIFEST.json').read_text(encoding="utf-8"))
             self.assertEqual(m['seeds'],[{'name':'seed','value':'99','source':'declared'}])
             self.assertEqual(m['implementation']['matlab_toolboxes'],['new'])
 
@@ -150,9 +150,9 @@ class ProvenanceRegressions(unittest.TestCase):
             with self.subTest(change=change),tempfile.TemporaryDirectory() as d:
                 p=Path(d);build_valid_project(p)
                 path=p/'runs/RUN-Q1-001/RUN_MANIFEST.json'
-                manifest=json.loads(path.read_text())
+                manifest=json.loads(path.read_text(encoding="utf-8"))
                 manifest['inputs'][0].update(change)
-                path.write_text(json.dumps(manifest))
+                path.write_text(json.dumps(manifest), encoding="utf-8")
                 with self.assertRaisesRegex(ValueError,'integrity'):
                     resolve_official_computation(p)
 
@@ -163,4 +163,4 @@ class ProvenanceRegressions(unittest.TestCase):
             newest_descendant(runs,'A')
         root=Path(__file__).resolve().parents[1]
         for rel in ('.agents/skills/cumcm-workflow/references/04-computation.md','docs/workflow-contract.md'):
-            self.assertIn('ambiguous',(root/rel).read_text())
+            self.assertIn('ambiguous',(root/rel).read_text(encoding="utf-8"))

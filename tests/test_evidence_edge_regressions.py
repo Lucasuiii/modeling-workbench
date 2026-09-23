@@ -21,14 +21,14 @@ class RequestedRegressions(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             build_inputs(root)
-            plan = json.loads((root / 'paper/PAPER_PLAN.json').read_text())
+            plan = json.loads((root / 'paper/PAPER_PLAN.json').read_text(encoding="utf-8"))
             plan['paper_structure'].append({'section_id': 'SYNTHESIS', 'title': 'Synthesis',
                 'purpose': 'interpret result', 'subproblem_ids': [], 'claim_ids': ['C1']})
             write_json(root, 'paper/PAPER_PLAN.json', plan)
             # Restore the synthetic checkpoint after intentionally changing the fixture plan.
             from workflow_fixtures import write_accepted_snapshot
             write_accepted_snapshot(root, 'validation', ['validation/CLAIM_LEDGER.json'])
-            manifest = json.loads(initialize(root, 'Demand model', 2026, 'demand').read_text())
+            manifest = json.loads(initialize(root, 'Demand model', 2026, 'demand').read_text(encoding="utf-8"))
             write_json(root, 'runs/R1/RUN_MANIFEST.json', {'run_id': 'R1', 'official_run': True,
                 'implementation': {'source_snapshot': {'files': ['code/solve.py']}}})
             write_json(root, 'validation/CLAIM_LEDGER.json', {'claims': [{'claim_id': 'C1', 'evidence': {'run_ids': ['R1']}}]})
@@ -79,16 +79,16 @@ class RequestedRegressions(unittest.TestCase):
             base = Path(temp).resolve()
             root = base / 'project'; root.mkdir()
             home = base / 'Library/texmf'; home.mkdir(parents=True)
-            (home / 'personal.sty').write_text('style')
-            (root / 'main.tex').write_text('source')
+            (home / 'personal.sty').write_text('style', encoding="utf-8")
+            (root / 'main.tex').write_text('source', encoding="utf-8")
             fls = root / 'main.fls'
-            fls.write_text(f'INPUT {root / "main.tex"}\nINPUT {home / "personal.sty"}\n')
+            fls.write_text(f'INPUT {root / "main.tex"}\nINPUT {home / "personal.sty"}\n', encoding="utf-8")
             def query(argv, **kwargs):
                 return subprocess.CompletedProcess(argv, 0, stdout=str(home) if argv[-1] == '-var-value=TEXMFHOME' else '')
             with patch('compile_sources.shutil.which', return_value='/bin/kpsewhich'), patch('compile_sources.subprocess.run', side_effect=query):
                 roots = runtime_roots()
             self.assertEqual(observed_sources(root, root, fls, roots), {'main.tex'})
-            outside = base / 'outside.sty'; outside.write_text('external')
-            fls.write_text(f'INPUT {outside}\n')
+            outside = base / 'outside.sty'; outside.write_text('external', encoding="utf-8")
+            fls.write_text(f'INPUT {outside}\n', encoding="utf-8")
             with self.assertRaisesRegex(ValueError, 'external project dependency'):
                 observed_sources(root, root, fls, roots)

@@ -33,7 +33,7 @@ class CrossCompetitionTests(unittest.TestCase):
             root = Path(temp)
             build_inputs(root)
             path = initialize(root, "Model comparison", 2026, "forecast; regression")
-            manifest = json.loads(path.read_text())
+            manifest = json.loads(path.read_text(encoding="utf-8"))
             for competition in ("CUMCM", "MCM/ICM", "MathorCup", "华为杯", "Statistical Modeling"):
                 manifest["competition"] = competition
                 self.assertEqual(check_schema(manifest, "latex_template", "paper", "manifest"), [])
@@ -50,7 +50,7 @@ class CrossCompetitionTests(unittest.TestCase):
                               "--competition-year", "2026", "--title", "Demand under uncertainty",
                               "--keywords", "demand; uncertainty")
             self.assertEqual(done.returncode, 0, done.stderr)
-            manifest = json.loads((root / "paper/LATEX_TEMPLATE_MANIFEST.json").read_text())
+            manifest = json.loads((root / "paper/LATEX_TEMPLATE_MANIFEST.json").read_text(encoding="utf-8"))
             self.assertEqual(manifest["competition"], "MCM/ICM")
             self.assertEqual(manifest["mode"], "contest_article")
             self.assertEqual(manifest["official_compliance"], "unverified")
@@ -74,7 +74,7 @@ class CrossCompetitionTests(unittest.TestCase):
                 root = Path(temp)
                 build_inputs(root)
                 manifest = json.loads(initialize(root, "Demand model", 2030, "demand",
-                    competition="GMCM", language=language, template=template).read_text())
+                    competition="GMCM", language=language, template=template).read_text(encoding="utf-8"))
                 self.assertEqual(manifest["template_id"], expected)
                 self.assertEqual(manifest["official_compliance"], "unverified")
 
@@ -88,7 +88,7 @@ class CrossCompetitionTests(unittest.TestCase):
                               "--competition", "华为杯",
                               "--competition-year", "2030", "--title", "Demand model", "--keywords", "demand")
             self.assertEqual(done.returncode, 0, done.stderr)
-            manifest = json.loads((root / "paper/LATEX_TEMPLATE_MANIFEST.json").read_text())
+            manifest = json.loads((root / "paper/LATEX_TEMPLATE_MANIFEST.json").read_text(encoding="utf-8"))
             self.assertEqual(manifest["template_id"], "huawei-ctex")
             self.assertEqual(manifest["official_compliance"], "unverified")
             self.assertEqual(manifest["competition_year"], 2030)
@@ -114,19 +114,19 @@ class CrossCompetitionTests(unittest.TestCase):
             root = Path(temp)
             build_inputs(root)
             manifest = json.loads(initialize(root, "轴承诊断研究", 2030, "轴承；诊断",
-                                             competition="华为杯", template="huawei-ctex").read_text())
+                                             competition="华为杯", template="huawei-ctex").read_text(encoding="utf-8"))
             paper = root / "paper"
             (paper / "sections/00_abstract.tex").write_text(
-                "\\begin{abstract}\n摘要正文标记。\\par\n\\noindent 关键词：轴承\\end{abstract}\n")
+                "\\begin{abstract}\n摘要正文标记。\\par\n\\noindent 关键词：轴承\\end{abstract}\n", encoding="utf-8")
             for rel in manifest["section_files"]:
                 if not rel.endswith("00_abstract.tex"):
-                    (root / rel).write_text("")
+                    (root / rel).write_text("", encoding="utf-8")
             (root / manifest["section_paths"][0]["path"]).write_text(
                 r"\section{模型分析} 正文标记。"
                 r"\begin{table}[H]\centering\caption{表格标题标记}"
                 r"\begin{tabular}{ll}\toprule 参数标记 & 数值\\\midrule 速度 & 10\\\bottomrule"
                 r"\end{tabular}\end{table}"
-                r"\begin{figure}[H]\centering\rule{2cm}{1cm}\caption{图形标题标记}\end{figure}")
+                r"\begin{figure}[H]\centering\rule{2cm}{1cm}\caption{图形标题标记}\end{figure}", encoding="utf-8")
             done = subprocess.run(["xelatex", "-interaction=nonstopmode", "-halt-on-error", "main.tex"],
                                   cwd=paper, capture_output=True, text=True)
             self.assertEqual(done.returncode, 0, done.stdout[-4000:])
@@ -152,7 +152,7 @@ class CrossCompetitionTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             build_inputs(root)
-            manifest = json.loads(initialize(root, "Model comparison", 2026, "regression").read_text())
+            manifest = json.loads(initialize(root, "Model comparison", 2026, "regression").read_text(encoding="utf-8"))
             self.assertEqual(manifest["competition"], "CUMCM")
             self.assertEqual(manifest["mode"], "contest_ctex")
             self.assertEqual(manifest["schema_version"], "0.6.0")
@@ -204,7 +204,7 @@ class CrossCompetitionTests(unittest.TestCase):
                 self.assertEqual([f for f in findings if f.severity == "error"], [])
                 self.assertEqual(summary["gate_status"], "passed")
                 path = root / "paper/LATEX_TEMPLATE_MANIFEST.json"
-                manifest = json.loads(path.read_text())
+                manifest = json.loads(path.read_text(encoding="utf-8"))
                 manifest["official_compliance"] = "unverified"
                 write_json(root, "paper/LATEX_TEMPLATE_MANIFEST.json", manifest)
                 findings, summary = check_project(root, "delivery", "enforce")
@@ -226,7 +226,7 @@ class CrossCompetitionTests(unittest.TestCase):
             initialize(root, "Demand under uncertainty", 2026, "demand; uncertainty", competition="MCM/ICM", language="en")
             done = run_script("record_compile.py", "--project", str(root))
             self.assertEqual(done.returncode, 0, done.stdout + done.stderr)
-            receipt = json.loads((root / "delivery/COMPILE_RECEIPT.json").read_text())
+            receipt = json.loads((root / "delivery/COMPILE_RECEIPT.json").read_text(encoding="utf-8"))
             attempt = receipt["attempts"][0]
             self.assertEqual(attempt["glyph_check"], "pass")
             self.assertEqual(attempt["font_check"], "pass")
@@ -248,7 +248,7 @@ class CrossCompetitionTests(unittest.TestCase):
             with zipfile.ZipFile(root / "delivery/paper-source.zip") as archive:
                 self.assertTrue(set(receipt["source_snapshot"]["files"]).issubset(archive.namelist()))
                 self.assertEqual(archive.read("paper/main.tex"), (root / "paper/main.tex").read_bytes())
-            (root / "paper/macros.tex").write_text("% changed after compile\n")
+            (root / "paper/macros.tex").write_text("% changed after compile\n", encoding="utf-8")
             with self.assertRaisesRegex(ValueError, "stale"):
                 build_archives(root, delivery)
 

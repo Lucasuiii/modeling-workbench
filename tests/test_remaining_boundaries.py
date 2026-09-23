@@ -23,7 +23,7 @@ class RemainingBoundaries(unittest.TestCase):
 
     def test_value_mismatch_rejected_by_consumers_but_refresh_repairs(self):
         path = self.root / 'results/RESULTS_INDEX.json'
-        data = json.loads(path.read_text()); original = data['results'][0]['value']
+        data = json.loads(path.read_text(encoding="utf-8")); original = data['results'][0]['value']
         data['results'][0]['value'] = 'wrong value'
         write_json(self.root, 'results/RESULTS_INDEX.json', data)
         for consumer in (lambda: resolve_official_computation(self.root), lambda: handoff(self.root, 'computation-validation'), lambda: review(self.root, refresh=True)):
@@ -31,7 +31,7 @@ class RemainingBoundaries(unittest.TestCase):
                 consumer()
         done = run_script('index_result.py', '--project', str(self.root), '--refresh')
         self.assertEqual(done.returncode, 0, done.stderr)
-        self.assertEqual(json.loads(path.read_text())['results'][0]['value'], original)
+        self.assertEqual(json.loads(path.read_text(encoding="utf-8"))['results'][0]['value'], original)
         self.assertTrue(resolve_official_computation(self.root))
 
     def test_zip_rejects_safe_undeclared_extra(self):
@@ -51,14 +51,14 @@ class RemainingBoundaries(unittest.TestCase):
         self.assertIn('--follow-lineage', ' '.join(changed_run['actions']['computation']))
 
     def test_team_formal_input_role_schema_checker_and_digest(self):
-        live = self.root / 'data/team.csv'; live.parent.mkdir(); live.write_text('x\n1\n')
+        live = self.root / 'data/team.csv'; live.parent.mkdir(); live.write_text('x\n1\n', encoding="utf-8")
         frozen = self.root / 'runs/RUN-Q1-001/inputs/data/team.csv'; frozen.parent.mkdir(parents=True); frozen.write_bytes(live.read_bytes())
         manifest_path = self.root / 'runs/RUN-Q1-001/RUN_MANIFEST.json'
-        manifest = json.loads(manifest_path.read_text())
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
         manifest['inputs'].append({'path': frozen.relative_to(self.root).as_posix(), 'sha256': sha256_file(frozen), 'evidence_role': 'formal_input', 'frozen': True})
         write_json(self.root, manifest_path.relative_to(self.root).as_posix(), manifest)
         path = review(self.root, refresh=True)
-        package = json.loads(path.read_text())
+        package = json.loads(path.read_text(encoding="utf-8"))
         record = next(item for item in package['files'] if item.get('source_path') == frozen.relative_to(self.root).as_posix())
         self.assertEqual(record['role'], 'formal_input')
         self.assertEqual(check_schema(package, 'independent_review_package', 'validation', str(path)), [])
