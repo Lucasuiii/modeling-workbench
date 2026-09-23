@@ -87,3 +87,11 @@ Targeted result 不必重复 full review 的 P1，但 validation→paper handoff
 确定性检查始终完整运行到目标阶段。需要被 scope 的是昂贵动作——重跑、重复核、重写——由 `plan_redo.py` 沿 ID 图反向遍历得出，并同时列出**不受影响**的 run、finding 和 section。v0.5 的 `cosmetic/local/semantic/claim_changing/global` 分类已删除。
 
 正式证据消费者统一由 canonical resolver 校验源码快照、全部 formal input 与 claim-bearing output 的实际 SHA256。入口仅接受可识别的直接 Python 脚本或 MATLAB `run('path.m')` 调用，`--source` 不能替代执行入口。Python runtime 来自实际命令解释器的运行前探测；seed、依赖和 toolbox 为声明元数据，rerun 保留 seed/toolbox 声明但不继承断言。
+
+## 决策写入与失败定位
+
+`record_decision.py` 在 POSIX 使用 `flock`、原生 Windows 使用 `msvcrt` 跨进程锁。锁覆盖编号分配、checkpoint 检查、追加决策日志、快照和状态写入；正常退出、异常退出由显式释放或进程关闭解除锁。这不会改变人工确认要求，也不是跨文件崩溃恢复协议。
+
+`RUN-E008` 报告失败断言在数组中的序号（从 1 开始）与名称；无名称的条目标为 `unnamed`。消息不展开断言 `details`，名称中的不可打印字符被替换并限制显示长度。正式 run 的失败仍为 error，探索 run 仍为 warning；诊断更具体不代表检查放宽。
+
+提交检查严格解码 UTF-8 JSON 与显式指定为 UTF-8 的 Poppler 输出。无法解码时报告失败，不通过忽略或替换字符绕过身份信息检查。平台验证范围见[已知限制](limitations.md#平台与验证边界)。

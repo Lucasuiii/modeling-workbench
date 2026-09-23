@@ -108,7 +108,7 @@ Add `--json` for the full structured report. Environment checks are stage-specif
 - **macOS**: an example path is `/Users/yourname/Documents/official-materials`.
 - **Windows: WSL2 recommended**. Run the agent and tools inside WSL2. A materials path might be `/mnt/c/Users/yourname/Documents/official-materials`; a new project can go in `/home/your-wsl-username/modeling-projects/2026B`.
 - Use paths visible to the **agent's execution environment**. Python, the computation backend and XeLaTeX must also be available in that environment.
-- Native PowerShell has not been validated end to end; the Bash examples later in this README cannot be copied verbatim.
+- **Native Windows**: decision recording uses Windows file locking; submission checks read JSON and Poppler text output as UTF-8. Native Windows CI is included, but does not certify complete contest delivery. Translate the Bash examples before using PowerShell; see [platform validation boundaries](docs/limitations.md#平台与验证边界).
 - Ask the agent to check and report missing dependencies; you do not need to configure the entire toolchain manually beforehand. Setup time depends on installed dependencies, and first-time LaTeX setup may take a while.
 - Initialization copies and identifies the official materials without modifying the source folder. For open-topic tasks, supply the official theme and requirements.
 
@@ -364,7 +364,7 @@ python3 -m unittest discover -s tests -p 'test_*.py' -v
 python3 -m compileall -q .agents/skills/cumcm-workflow/scripts tests
 ```
 
-CI runs the full suite in two environments: Python 3.10, and Python 3.13 with TeX Live/Poppler for real compilation. There is no additional duplicate 3.13 job. Shared fixtures live in `tests/workflow_fixtures.py` and `tests/recorder_fixtures.py`; all regression cases are retained. Tool-dependent tests skip locally when their tools are absent.
+CI invokes the full unittest suite in three environments: Ubuntu/Python 3.10, Ubuntu/Python 3.13 with TeX Live/Poppler, and native Windows/Python 3.13. Tool-dependent tests skip when their tools are absent; the Linux LaTeX job exercises real XeLaTeX compilation. The Windows job also runs compileall and JSON Schema validation. Check [Actions](https://github.com/Lucasuiii/modeling-workbench/actions) for actual pass/fail status. Shared fixtures live in `tests/workflow_fixtures.py` and `tests/recorder_fixtures.py`; all regression cases are retained. Tool-dependent tests skip locally when their tools are absent.
 
 ## 12. Limits and licence
 

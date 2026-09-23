@@ -25,3 +25,10 @@
 
 - 编译依赖来自 TeX recorder 的实际读取记录；首遍发现后至少一遍验证稳定输入。系统 TeX 树与字体仍是运行环境依赖，不装入源码 ZIP；`.bib` 等编译前生成工具的输入仍须声明为 `required_files`。这不是任意 TeX 宏或外部生成器的完整可复现环境封装。
 - 返工计划会沿已声明的输出/正式输入依赖传递；对历史冻结输入采取保守提醒，需要先决定是否更新其绑定，不会自行替换历史方案或解决分叉。
+
+## 平台与验证边界
+
+- Windows 仍推荐 WSL2，以便直接使用文档中的 Bash 命令。原生 Windows 的 `record_decision.py` 使用 `msvcrt` 字节锁，POSIX 使用 `flock`；两者都覆盖决策编号分配、checkpoint 检查、日志与状态写入。锁只协调遵守同一锁协议的进程，不使多个文件的写入自动具备崩溃回滚能力。
+- 提交检查显式以 UTF-8 读取契约 JSON，并指定 Poppler 的 UTF-8 输出后严格解码。解码失败会报告检查失败，不会丢弃字符后继续匿名性判断。仍需在 agent 实际执行环境安装 Python、计算后端及论文阶段需要的 XeLaTeX/Poppler。
+- CI 包括 Ubuntu Python 3.10、Ubuntu Python 3.13＋TeX Live/Poppler、原生 Windows Python 3.13。Windows 作业没有安装完整 TeX/Poppler 环境，相关用例可能跳过；新增作业本身不是通过证明，结果以 [Actions](https://github.com/Lucasuiii/modeling-workbench/actions) 为准。本机模拟缺少 `fcntl` 或非 UTF-8 locale，不替代原生 Windows 实测。
+- 华为杯中文初始化会按已识别的比赛名称自动选择 `huawei-ctex`；`--template generic` 可覆盖。该预设只提供可修改的字号和布局，仍须核验当届规则，不保证长表、长公式或任意图文组合不溢出；没有新增自动 PDF 字号普查。见[华为杯适配指南](../.agents/skills/cumcm-workflow/references/huawei-delivery.md)。

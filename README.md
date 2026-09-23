@@ -103,7 +103,7 @@ python3 "$S/project_status.py" --project /绝对路径/已有项目
 - **macOS**：路径例如 `/Users/你的名字/Documents/赛题资料`。
 - **Windows 推荐 WSL2**：在 WSL2 中运行 agent 和工具，材料路径例如 `/mnt/c/Users/你的名字/Documents/赛题资料`；新项目可放在 `/home/你的WSL用户名/modeling-projects/2026B`。
 - 路径须采用 **agent 执行环境**可见的格式。Python、计算后端和 XeLaTeX 也须在同一环境中可用。
-- 原生 PowerShell 尚未经过端到端验证；本文后面的 Bash 示例不能直接照抄。
+- **原生 Windows**：决策记录器已使用 Windows 文件锁；提交检查按 UTF-8 读取 JSON 和 Poppler 文本输出。原生 Windows CI 已纳入测试，但不等于完整比赛交付已验证；本文后面的 Bash 示例不能直接照抄进 PowerShell。详见[平台与验证边界](docs/limitations.md#平台与验证边界)。
 - 让 agent 检查并报告缺失依赖即可，无需预先手动配置整套工具。环境安装时间取决于现有依赖，首次 LaTeX 准备可能较久。
 - 初始化会复制并固定官方材料的身份，不修改原材料目录；自主选题任务请提供官方主题与要求。
 
@@ -547,7 +547,7 @@ python3 -m unittest discover -s tests -p 'test_*.py' -v
 python3 -m compileall -q .agents/skills/cumcm-workflow/scripts tests
 ```
 
-CI 分两路运行完整测试：Python 3.10 基础环境，以及 Python 3.13＋TeX Live/Poppler 环境；后者包含**真实 XeLaTeX 编译**，不再另跑重复的 3.13 作业。共用 fixture 位于 `tests/workflow_fixtures.py` 与 `tests/recorder_fixtures.py`，回归用例仍全部保留。
+CI 分三路运行测试：Ubuntu＋Python 3.10、Ubuntu＋Python 3.13＋TeX Live/Poppler，以及原生 Windows＋Python 3.13。三路都调用完整 unittest；缺少外部工具的用例按条件跳过，Linux LaTeX 作业负责**真实 XeLaTeX 编译**。Windows 作业另运行 compileall 和 JSON Schema 校验。实际通过状态以 [Actions](https://github.com/Lucasuiii/modeling-workbench/actions) 为准。共用 fixture 位于 `tests/workflow_fixtures.py` 与 `tests/recorder_fixtures.py`，回归用例仍全部保留。
 
 不向下兼容：v0.6 拒绝任何 `schema_version` 不是 `0.6.0` 的契约，仓库里也不再保留迁移脚本。旧工作区请用官方文件重新初始化。
 
