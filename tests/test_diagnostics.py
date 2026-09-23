@@ -21,7 +21,7 @@ def snapshot(root):
 
 def cli(name, *args, cwd=None):
     return subprocess.run([sys.executable, '-B', str(SCRIPTS / name), *args],
-                          cwd=cwd, capture_output=True, text=True)
+                          cwd=cwd, capture_output=True, text=True, encoding='utf-8')
 
 
 class DoctorTests(unittest.TestCase):
@@ -90,6 +90,28 @@ class DoctorTests(unittest.TestCase):
 
 
 class ProjectStatusTests(unittest.TestCase):
+    def test_status_output_survives_legacy_pipe_encoding(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            build_valid_project(root)
+            env = dict(os.environ, PYTHONIOENCODING='cp1252:strict')
+            for args in (['--json'], []):
+                with self.subTest(args=args):
+                    done = subprocess.run([sys.executable, '-B', str(SCRIPTS / 'project_status.py'),
+                                           '--project', str(root), *args], env=env,
+                                          capture_output=True, text=True, encoding='utf-8')
+                    self.assertEqual(done.returncode, 0, done.stderr)
+                    if args:
+                        self.assertIn('阶段', json.loads(done.stdout)['next_action'])
+                    else:
+                        self.assertIn('下一步', done.stdout)
+            (root / '.cumcm/state.json').unlink()
+            failed = subprocess.run([sys.executable, '-B', str(SCRIPTS / 'project_status.py'),
+                                     '--project', str(root), '--json'], env=env,
+                                    capture_output=True, text=True, encoding='utf-8')
+            self.assertEqual(failed.returncode, 2, failed.stderr)
+            self.assertEqual(json.loads(failed.stdout)['status'], 'unavailable')
+
     def test_real_checker_parity_readonly_and_no_auto_advance(self):
         with tempfile.TemporaryDirectory(prefix='状态 项目 ') as directory:
             root = Path(directory)

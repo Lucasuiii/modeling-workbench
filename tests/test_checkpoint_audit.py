@@ -4,11 +4,14 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from recorder_fixtures import make_project, run_script, write_json
 from workflow_fixtures import write_accepted_snapshot
 from workflow_checks import require_human_checkpoint
+from workflow_checks import sha256
 from build_handoff import build
+from record_decision import main as record_decision_main
 
 
 def model_with_candidates(root, statuses):
@@ -30,6 +33,27 @@ def confirm(root, *extra):
 
 
 class CheckpointAudit(unittest.TestCase):
+    def test_confirmation_binds_exact_checkpoint_bytes_under_windows_newlines(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = make_project(Path(tmp)); model_with_candidates(root, ['selected'])
+            original = tempfile.NamedTemporaryFile
+
+            def windows_newlines(*args, **kwargs):
+                if args and args[0] == 'w':
+                    kwargs['newline'] = '\r\n'
+                return original(*args, **kwargs)
+
+            argv = ['record_decision.py', '--project', str(root), '--stage', 'model-design',
+                    '--decision', 'accepted', '--confirm-human', '--task-turn-ref', 'fixture-turn',
+                    '--summary', 'Synthetic approval of the presented model']
+            with patch('record_decision.tempfile.NamedTemporaryFile', side_effect=windows_newlines), \
+                    patch.object(sys, 'argv', argv):
+                self.assertEqual(record_decision_main(), 0)
+            require_human_checkpoint(root, 'model-design')
+            snapshot = json.loads((root / '.cumcm/snapshots/model-design.json').read_text(encoding='utf-8'))
+            record = next(item for item in snapshot['artifacts'] if item['path'] == 'model/MODEL_CONTRACT.json')
+            self.assertEqual(record['sha256'], sha256(root / 'model/MODEL_CONTRACT.json'))
+
     def test_missing_snapshot_blocks_handwritten_approval_at_action_boundaries(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = make_project(Path(tmp)); model_with_candidates(root, ['selected'])

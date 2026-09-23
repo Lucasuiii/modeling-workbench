@@ -66,6 +66,10 @@ def main() -> int:
     parser.add_argument("--project", type=Path, required=True)
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args()
+    # Pipe encodings on Windows may be cp1252 even when project text is UTF-8.
+    # This CLI writes UTF-8 JSON and Chinese guidance on every platform.
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
     try:
         report = inspect_project(args.project)
     except (OSError, ValueError, TypeError, KeyError, AttributeError, ImportError) as exc:

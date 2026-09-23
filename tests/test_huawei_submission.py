@@ -2,7 +2,6 @@
 from __future__ import annotations
 import copy
 import json
-import locale
 import os
 import shutil
 import subprocess
@@ -194,13 +193,16 @@ class SubmissionTests(unittest.TestCase):
         receipt['attempts'][0]['pdf_sha256'] = measure(self.root, 'paper/中文队伍.pdf')['sha256']
         write_json(self.root, 'delivery/COMPILE_RECEIPT.json', receipt)
         write_json(self.root, 'delivery/DELIVERY_MANIFEST.json', self.data)
-        with patch.object(locale, 'getencoding', return_value='ascii'):
-            self.assertTrue(is_huawei(self.root))
-            observed, errors = inspect_submission(self.root, self.data)
-            self.assertEqual(errors, [])
-            self.assertEqual(observed['pdf']['path'], 'paper/中文队伍.pdf')
-            with patch.object(sys, 'argv', ['submission_check.py', '--project', str(self.root)]), patch('builtins.print'):
-                self.assertEqual(main(), 0)
+        self.assertTrue(is_huawei(self.root))
+        observed, errors = inspect_submission(self.root, self.data)
+        self.assertEqual(errors, [])
+        self.assertEqual(observed['pdf']['path'], 'paper/中文队伍.pdf')
+        with patch.object(sys, 'argv', ['submission_check.py', '--project', str(self.root)]), patch('builtins.print'):
+            self.assertEqual(main(), 0)
+
+    def test_non_utf8_locale_reads_utf8_json_with_ascii_paths(self):
+        self.data['submission']['rules']['identity_tokens'] = ['上海大学']
+        write_json(self.root, 'delivery/DELIVERY_MANIFEST.json', self.data)
         code = """import json, sys
 from pathlib import Path
 from unittest.mock import patch

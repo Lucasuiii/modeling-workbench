@@ -368,12 +368,14 @@ class ModesAndReviewTests(unittest.TestCase):
             self.assertEqual(detected, {"path": str(executable.resolve()), "source": "configured"})
 
     def test_matlab_detection_uses_path_before_macos_applications(self):
-        with mock.patch("backend_selection.shutil.which", return_value="/opt/matlab/bin/matlab"), mock.patch(
-            "backend_selection.glob.glob", return_value=["/Applications/MATLAB_R2026b.app/bin/matlab"]
-        ) as app_glob:
-            detected = detect_matlab_executable({})
-        self.assertEqual(detected, {"path": "/opt/matlab/bin/matlab", "source": "path"})
-        app_glob.assert_not_called()
+        with tempfile.TemporaryDirectory() as temp:
+            executable = str(Path(temp) / "matlab")
+            with mock.patch("backend_selection.shutil.which", return_value=executable), mock.patch(
+                "backend_selection.glob.glob", return_value=["/Applications/MATLAB_R2026b.app/bin/matlab"]
+            ) as app_glob:
+                detected = detect_matlab_executable({})
+            self.assertEqual(detected, {"path": str(Path(executable).resolve()), "source": "path"})
+            app_glob.assert_not_called()
 
     def test_matlab_detection_uses_newest_macos_application(self):
         candidates = [

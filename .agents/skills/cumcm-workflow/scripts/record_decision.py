@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import argparse
 import errno
-import hashlib
 import json
 import os
 import tempfile
@@ -43,9 +42,8 @@ def load_events(path: Path) -> list[dict]:
 
 def write_json_atomic(path: Path, payload: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.NamedTemporaryFile("w", encoding="utf-8", dir=path.parent, delete=False) as stream:
-        json.dump(payload, stream, ensure_ascii=False, indent=2)
-        stream.write("\n")
+    with tempfile.NamedTemporaryFile("wb", dir=path.parent, delete=False) as stream:
+        stream.write((json.dumps(payload, ensure_ascii=False, indent=2) + "\n").encode("utf-8"))
         temp_name = stream.name
     os.replace(temp_name, path)
 
@@ -211,13 +209,16 @@ def _record_decision(args, root: Path, parser: argparse.ArgumentParser, log_path
     if ".cumcm/state.json" in scope_paths:
         parser.error("workflow state is mutable and must not be included in a decision scope")
     scope = []
+    checkpoint_scope = None
     for rel in scope_paths:
         artifact = safe_project_path(root, rel)
         if artifact is None or not artifact.is_file():
             parser.error(f"scope file is missing or unsafe: {rel}")
-        digest = (hashlib.sha256((json.dumps(checkpoint_data, ensure_ascii=False, indent=2) + "\n").encode()).hexdigest()
-                  if checkpoint_data is not None and artifact == checkpoint_path else sha256(artifact))
-        scope.append({"path": rel, "sha256": digest})
+        is_checkpoint = checkpoint_data is not None and artifact == checkpoint_path
+        item = {"path": rel, "sha256": None if is_checkpoint else sha256(artifact)}
+        if is_checkpoint:
+            checkpoint_scope = item
+        scope.append(item)
 
     event = {
         "decision_id": args.decision_id,
@@ -231,6 +232,8 @@ def _record_decision(args, root: Path, parser: argparse.ArgumentParser, log_path
     }
     if checkpoint_data is not None:
         write_json_atomic(checkpoint_path, checkpoint_data)
+        if checkpoint_scope is not None:
+            checkpoint_scope["sha256"] = sha256(checkpoint_path)
     with log_path.open("a", encoding="utf-8") as stream:
         stream.write(json.dumps(event, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n")
     snapshot_path = root / ".cumcm" / "snapshots" / f"{args.stage}.json"

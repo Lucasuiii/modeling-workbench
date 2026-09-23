@@ -45,7 +45,9 @@ class ProvenanceRegressions(unittest.TestCase):
             done=run_script('record_run.py','--project',str(p),'--run-id','RUNTIME','--',rel,'code/solve.py')
             self.assertEqual(done.returncode,0,done.stdout+done.stderr)
             manifest=json.loads((p/'runs/RUNTIME/RUN_MANIFEST.json').read_text(encoding="utf-8"))
-            self.assertIn(str(p/rel),manifest['implementation']['runtime'])
+            runtime = manifest['implementation']['runtime']
+            observed = runtime.rsplit(' (', 1)[1].split('); observed interpreter probe', 1)[0]
+            self.assertTrue(os.path.samefile(p/rel, observed))
             self.assertEqual(manifest['argv'][0],rel)
 
     def test_canonical_rejects_tampered_input_and_output(self):
