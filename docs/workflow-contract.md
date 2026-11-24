@@ -41,7 +41,7 @@ Warning 和 suggestion 会进入报告，但不改变通过状态。
 - **不能手打判决充当已验证**：`--assert x=pass` 记为 `source: "declared"`（调用者的备注），`--assert-file` 读程序自己写出的判决，记为 `source: "recorded"`。只有后者能满足冻结模型的 `verification_plan`。
 - **证据不能在脚下移动**：声明的源码与 formal input 在执行前取哈希、执行后复核；冻结发生在命令退出之后，运行中被改过的文件会被冻结成"运行从未读过的东西"，直接拒绝记录。
 
-`--rerun` 追加而不覆盖；supersession 从 `parent_run_id` 链推导，不回写旧 manifest。**只有成功的 official child 才构成取代**——失败或探索性的 child 什么也没替代，让它退休父运行会把唯一可用的证据作废。一个父运行有多个成功 official child 时属于 ambiguous；必须用 `--run-id` 明确选择分支，不自动选最新。
+`--rerun` 追加而不覆盖；supersession 从 `parent_run_id` 链推导，不回写旧 manifest。**只有成功的 official child 才构成取代**——失败或探索性的 child 什么也没替代，让它退休父运行会把唯一可用的证据作废。一个父运行有多个成功 official child 时属于 ambiguous；用 `index_result.py --run` 并给出结果 ID 和定位符，明确选择分支，不自动选最新。
 
 checker、computation handoff、独立复核包和 paper→delivery 共用 `canonical_evidence.resolve_official_computation`，所以"当前正式运行"在四处含义一致，不会出现 checker 拦住而 builder 照样打包的情况。重新指向结果必须用 `index_result.py --follow-lineage` 显式进行。
 
@@ -90,7 +90,7 @@ Targeted result 不必重复 full review 的 P1，但 validation→paper handoff
 
 ## 决策写入与失败定位
 
-`record_decision.py` 在 POSIX 使用 `flock`、原生 Windows 使用 `msvcrt` 跨进程锁。锁覆盖编号分配、checkpoint 检查、追加决策日志、快照和状态写入；正常退出、异常退出由显式释放或进程关闭解除锁。这不会改变人工确认要求，也不是跨文件崩溃恢复协议。
+`record_decision.py` 在 POSIX 使用 `flock`、原生 Windows 使用 `msvcrt` 跨进程锁。锁覆盖编号分配、checkpoint 检查、追加决策日志、快照和状态写入；正常退出、异常退出由显式释放或进程关闭解除锁。写入前保存待完成的决定。进程中断后运行 `record_decision.py --project <p> --recover`，脚本在锁内核对原回复绑定的材料，并补全日志、快照与状态；重复恢复只保留一条记录。如果材料已变，恢复会列出冲突，使用同阶段的 `revision_requested` 重开，再向用户展示新版。
 
 `RUN-E008` 报告失败断言在数组中的序号（从 1 开始）与名称；无名称的条目标为 `unnamed`。消息不展开断言 `details`，名称中的不可打印字符被替换并限制显示长度。正式 run 的失败仍为 error，探索 run 仍为 warning；诊断更具体不代表检查放宽。
 

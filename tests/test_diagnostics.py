@@ -40,6 +40,14 @@ class DoctorTests(unittest.TestCase):
         self.assertEqual(next(c['status'] for c in report['checks'] if c['name'] == 'matlab'), 'unverified')
         self.assertFalse(any(call.args[0][0] == '/fake/matlab' for call in probe.call_args_list))
 
+    def test_pdftotext_is_required_for_paper_detection(self):
+        with patch.object(doctor.shutil, "which", side_effect=lambda name: None if name == "pdftotext" else name), \
+             patch.object(doctor, "probe", return_value=("available", "version")):
+            report = doctor.diagnose()
+        self.assertTrue(report["base_ready"])
+        self.assertFalse(report["paper_tools_detected"])
+        self.assertEqual(next(c["status"] for c in report["checks"] if c["name"] == "pdftotext"), "missing")
+
     def test_broken_dependencies_block_base(self):
         with patch.object(doctor, 'probe', return_value=('failed', 'import failure')):
             report = doctor.diagnose()

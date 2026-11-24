@@ -38,11 +38,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from canonical_evidence import live_path_of
 from provenance import sha256_file, tree_snapshot
 
 WORKFLOW_VERSION = "0.6.0"
 INPUT_ROLES = {"formal": "formal_input", "auxiliary": "auxiliary_input"}
-FROZEN_KINDS = {"source", "outputs", "inputs"}
 MAX_FROZEN_INPUT_BYTES = 64 * 1024 * 1024
 OUTPUT_ROLES = {"claim": "claim_bearing_output", "intermediate": "intermediate_output", "diagnostic": "diagnostic_output"}
 
@@ -191,14 +191,6 @@ def freeze(root: Path, run_dir: Path, rel: str, kind: str) -> str:
     destination.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy2(origin, destination)
     return destination.relative_to(root).as_posix()
-
-
-def live_path_of(frozen: str) -> str | None:
-    """Inverse of freeze(): runs/<id>/source/code/solve.py -> code/solve.py."""
-    parts = frozen.split("/")
-    if len(parts) > 3 and parts[0] == "runs" and parts[2] in FROZEN_KINDS:
-        return "/".join(parts[3:])
-    return None
 
 
 def mtime_of(root: Path, rel: str) -> int | None:

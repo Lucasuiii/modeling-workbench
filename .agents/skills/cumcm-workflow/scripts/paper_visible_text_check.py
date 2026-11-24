@@ -16,8 +16,8 @@ from workflow_checks import WORKFLOW_VERSION, sha256
 
 BLOCKING_PATTERNS = {
     # Workflow IDs have a fixed shape (PREFIX-[Qn-]NNN); a bare "MODEL-A" in prose is not one.
-    "PAPER-TEXT-E001": re.compile(r"\b(?:SRC|FACT|CAP|MODEL|RUN|RES|CLM|FIG)-(?:[A-Z]+\d+-)?\d{3}\b"),
-    "PAPER-TEXT-E002": re.compile(r"\b(?:supported_not_reproduced|partially_supported|not_supported|not_applicable|missing_evidence|not_checked)\b", re.I),
+    "PAPER-TEXT-E001": re.compile(r"\b(?:SRC|FACT|CAP|MODEL|RUN|RES|CLM|FIG)-(?:[A-Z]+\d+-)?\d{3}\b", re.ASCII),
+    "PAPER-TEXT-E002": re.compile(r"\b(?:supported_not_reproduced|partially_supported|not_supported|not_applicable|missing_evidence|not_checked)\b", re.I | re.ASCII),
     "PAPER-TEXT-E003": re.compile(r"(?:validation\s*门禁|workflow\s*gate|claim-bearing|\bvalidation\s+ID\b)", re.I),
     "PAPER-TEXT-E004": re.compile(r"(?:file:///|/(?:Users|home)/[^\s/]+/|/private/var/folders/|[A-Za-z]:\\(?:Users|Documents and Settings)\\)", re.I),
 }
@@ -37,19 +37,25 @@ def extract_pdf_text(pdf: Path) -> str:
     with tempfile.TemporaryDirectory(prefix="cumcm-paper-text-") as temp:
         output = Path(temp) / "paper.txt"
         completed = subprocess.run(
-            ["pdftotext", "-layout", str(pdf), str(output)],
+            ["pdftotext", "-enc", "UTF-8", "-layout", str(pdf), str(output)],
             check=False,
             capture_output=True,
             text=True,
         )
         if completed.returncode:
             raise ValueError(f"pdftotext failed: {completed.stderr.strip()}")
-        return output.read_text(encoding="utf-8", errors="replace")
+        return output.read_text(encoding="utf-8")
 
 
 def inspect_text(text: str) -> tuple[list[dict], list[dict]]:
     blocking: list[dict] = []
     flags: list[dict] = []
+    pages = text.removesuffix("\f").split("\f")
+    for number, page in enumerate(pages, 1):
+        if not page.strip():
+            flags.append({"rule_id": "PAPER-TEXT-W003", "location": f"page:{number}",
+                          "excerpt": "No extractable text. Inspect the rendered page.",
+                          "resolution_status": "open", "resolution": None})
     for rule_id, pattern in BLOCKING_PATTERNS.items():
         for match in pattern.finditer(text):
             blocking.append(

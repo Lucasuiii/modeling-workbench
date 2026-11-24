@@ -9,11 +9,19 @@ import os
 import tempfile
 from pathlib import Path
 
+from record_decision import decision_lock
 from workflow_checks import WORKFLOW_VERSION, check_project
 
 
 def set_mode(project: Path, mode: str) -> dict:
     project = project.resolve()
+    with decision_lock(project / ".cumcm/decisions.lock"):
+        if (project / ".cumcm/pending-decision.json").exists():
+            raise ValueError("interrupted decision pending; run record_decision.py --project <p> --recover")
+        return _set_mode(project, mode)
+
+
+def _set_mode(project: Path, mode: str) -> dict:
     path = project / ".cumcm" / "state.json"
     state = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(state, dict) or state.get("workflow_version") != WORKFLOW_VERSION:

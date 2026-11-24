@@ -60,6 +60,14 @@ class ReviewAndVisibleTextTests(unittest.TestCase):
         self.assertGreaterEqual(len(blocking), 3)
         self.assertEqual(flags, [])
 
+    def test_cjk_adjacent_id_and_graphics_only_pages(self):
+        self.assertTrue(inspect_text("根据CLM-Q1-001可知")[0])
+        self.assertFalse(inspect_text("XCLM-Q1-0011")[0])
+        _, flags = inspect_text("Page one\f\fPage three\f")
+        self.assertEqual([(f["rule_id"], f["location"]) for f in flags], [("PAPER-TEXT-W003", "page:2")])
+        self.assertEqual(inspect_text("\f")[1][0]["location"], "page:1")
+        self.assertEqual(inspect_text("Readable text\f"), ([], []))
+
     def test_number_dense_sentence_and_excess_precision_require_review(self):
         blocking, flags = inspect_text("结果依次为 1.123456789、2.1、3.2、4.3、5.4、6.5。")
         self.assertEqual(blocking, [])

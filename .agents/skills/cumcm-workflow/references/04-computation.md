@@ -27,13 +27,9 @@ The mathematical formulation, variable meanings, result IDs, and acceptance chec
 python3 "$S/record_run.py" --project <p> -- python3 code/try.py
 
 # formal: declare only what the tool cannot know
-python3 "$S/record_run.py" --project <p> --official --capability CAP-Q1-001 \
+python3 "$S/record_run.py" --project <p> --run-id RUN-Q1-001 --official --capability CAP-Q1-001 \
   --source code/solve.py --input data/q1.csv:formal \
   --output results/q1.json:claim --assert-file results/assertions.json -- python3 code/solve.py
-
-# a rerun appends a successor (RUN-Q1-002) and leaves the parent untouched
-python3 "$S/record_run.py" --project <p> --rerun RUN-Q1-001 --official
-python3 "$S/index_result.py" --project <p> --follow-lineage
 ```
 
 Then index the result; the value is read through the locator, so the index can never disagree with the output:
@@ -42,6 +38,10 @@ Then index the result; the value is read through the locator, so the index can n
 python3 "$S/index_result.py" --project <p> --result-id RES-Q1-001 --run RUN-Q1-001 \
   --locator results/q1.json#/minimum_cost --name "Minimum cost" --unit CNY \
   --scope "declared candidates only" --check "feasibility"
+
+# a rerun appends a successor (RUN-Q1-002) and leaves the parent untouched
+python3 "$S/record_run.py" --project <p> --rerun RUN-Q1-001 --official --assert-file results/assertions.json
+python3 "$S/index_result.py" --project <p> --follow-lineage
 ```
 
 Exploratory runs are cheap on purpose: they are recorded, never trusted, and never block. A failed assertion or a non-zero exit inside one is a finding about the experiment, not about the formal chain.
@@ -88,7 +88,7 @@ Acceptance checks judged `recorded` are the reason `--assert-file` exists. The c
 - **a verdict it did not reach.** Assertions carry their provenance. `--assert name=pass` is a note typed by the caller and is recorded as `source: "declared"`; `--assert-file` reads verdicts the program wrote itself and is recorded as `source: "recorded"`. Only recorded verdicts satisfy a frozen `verification_plan` (`MODEL-E009`/`MODEL-W010`), and an official run carrying only declared ones raises `RUN-W003`. Assertions are also never inherited by a rerun -- new code has not been verified by the old run's `pass` -- and a rerun that drops its parent's assertions says so on stderr.
 - **evidence that moved under it.** Declared source and formal inputs are hashed before execution and re-checked after. Freezing happens once the command exits, so a file edited mid-run would be frozen as something the run never read; the recorder refuses to write the manifest and names the file.
 
-Only a **successful official** rerun supersedes its parent. A failed or exploratory child replaces nothing — retiring the parent on its account would invalidate the only usable evidence — and `--follow-lineage` skips it. Multiple successful official children are **ambiguous**: choose the intended branch explicitly with `--run-id`; no newest-child guess is made.
+Only a **successful official** rerun supersedes its parent. A failed or exploratory child replaces nothing — retiring the parent on its account would invalidate the only usable evidence — and `--follow-lineage` skips it. Multiple successful official children are **ambiguous**: choose the intended branch explicitly with `index_result.py --run` and the result ID and locator; no newest-child guess is made.
 
 Every formal consumer resolves "the run behind this result" through the same code, so the checker, the computation handoff, the review package and paper→delivery all refuse a superseded run rather than one of them quietly packaging it. Claims and figures still citing a retired run raise `CLAIM-W020` / `FIGURE-W013`.
 

@@ -20,6 +20,8 @@ import json
 from pathlib import Path
 from typing import Any
 
+from canonical_evidence import execution_inputs, live_path_of, official_successors, successful_official
+
 STAGE_ORDER = ["intake", "problem-analysis", "model-design", "computation", "validation", "paper", "delivery"]
 
 
@@ -36,14 +38,6 @@ def read(root: Path, rel: str) -> dict[str, Any]:
 
 def as_list(value: Any) -> list[Any]:
     return value if isinstance(value, list) else []
-
-
-def live_path_of(frozen: str) -> str | None:
-    """runs/<id>/source/code/solve.py -> code/solve.py (None if not a frozen path)."""
-    parts = frozen.split("/")
-    if len(parts) > 3 and parts[0] == "runs" and parts[2] in {"source", "outputs", "inputs"}:
-        return "/".join(parts[3:])
-    return None
 
 
 def normalize_changed_path(root: Path, value: str) -> str:
@@ -149,32 +143,17 @@ def build_plan(root: Path, changed: list[str]) -> dict[str, Any]:
         if isinstance(manifest, dict):
             manifests.append(manifest)
     # A superseded run is history. Never propose re-running it.
-    superseded = {
-        str(m.get("parent_run_id")) for m in manifests
-        if str(m.get("parent_run_id", "")).strip() and str(m.get("parent_run_id")) != str(m.get("run_id"))
-        and m.get("official_run") is True and m.get("status") == "completed" and m.get("exit_code") == 0
-    }
+    superseded = set(official_successors(manifests))
     for manifest in manifests:
-        if manifest.get("official_run") is not True or str(manifest.get("run_id")) in superseded:
+        if not successful_official(manifest) or str(manifest.get("run_id")) in superseded:
             continue
         run_id = str(manifest.get("run_id"))
         official_runs[run_id] = manifest
-        snapshot = manifest.get("implementation", {}).get("source_snapshot", {})
-        # Source is frozen inside the run directory, so watch the live counterpart:
-        # runs/<id>/source/code/solve.py is evidence for code/solve.py.
         watched = set()
-        for value in as_list(snapshot.get("files")):
-            watched.add(str(value))
-            live = live_path_of(str(value))
-            if live:
-                watched.add(live)
-        for entry in as_list(manifest.get("inputs")):
-            if not isinstance(entry, dict) or entry.get("evidence_role") != "formal_input":
-                continue
-            watched.add(str(entry.get("path")))
-            live = live_path_of(str(entry.get("path")))
-            if live:
-                watched.add(live)
+        for path in execution_inputs(manifest):
+            if isinstance(path, str):
+                watched.add(path)
+                watched.add(live_path_of(path) or path)
         if watched & changed_set:
             stale_runs.add(run_id)
     stale_candidate_ids = {

@@ -15,6 +15,7 @@ import zipfile
 import unicodedata
 from pathlib import Path
 
+from competition import is_huawei_competition
 from official_materials import classified_official_materials
 from refresh_evidence import write_atomic
 
@@ -171,8 +172,8 @@ def is_huawei(root: Path) -> bool:
     path = root / "paper/LATEX_TEMPLATE_MANIFEST.json"
     if not path.is_file():
         return False
-    name = str(json.loads(path.read_text(encoding="utf-8")).get("competition", "")).casefold()
-    return any(token in name for token in ("华为", "huawei", "研究生数学建模", "gmcm", "cpgmcm", "cpmcm"))
+    competition = json.loads(path.read_text(encoding="utf-8")).get("competition", "")
+    return is_huawei_competition(str(competition))
 
 
 def check_submission(root: Path, delivery: dict) -> list[str]:

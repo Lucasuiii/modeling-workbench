@@ -9,10 +9,42 @@ the same thing in all of them, superseded runs included.
 from __future__ import annotations
 
 import json
+from collections.abc import Iterable, Iterator
+from fractions import Fraction
 from pathlib import Path
 from typing import Any
 
+from json_pointer import resolve_json_pointer
 from provenance import snapshot_matches, sha256_file
+
+
+def successful_official(run: dict) -> bool:
+    return run.get("official_run") is True and run.get("status") == "completed" and run.get("exit_code") == 0
+
+
+def official_successors(manifests: Iterable[dict]) -> dict[str, list[str]]:
+    """Only completed official children retire a parent. A fork has multiple successors."""
+    children: dict[str, list[str]] = {}
+    for run in manifests:
+        parent = run.get("parent_run_id")
+        child = run.get("run_id")
+        if successful_official(run) and isinstance(parent, str) and parent.strip() and isinstance(child, str) and child and parent != child:
+            children.setdefault(parent, []).append(child)
+    return children
+
+
+def current_descendant(children: dict[str, list[str]], run_id: str) -> str:
+    seen = set()
+    while run_id in children:
+        if run_id in seen:
+            raise ValueError(f"cycle in official run lineage at {run_id}")
+        seen.add(run_id)
+        candidates = sorted(children[run_id])
+        if len(candidates) != 1:
+            raise ValueError(f"lineage from {run_id} is ambiguous: {', '.join(candidates)}; "
+                             "use --run with the result ID and locator to select a branch")
+        run_id = candidates[0]
+    return run_id
 
 
 def read_object(path: Path) -> dict[str, Any]:
@@ -25,6 +57,22 @@ def read_object(path: Path) -> dict[str, Any]:
     return value
 
 
+def live_path_of(frozen: str) -> str | None:
+    parts = frozen.split("/", 3)
+    if len(parts) == 4 and parts[0] == "runs" and parts[2] in {"source", "inputs", "outputs"}:
+        return parts[3]
+    return None
+
+
+def execution_inputs(run: dict) -> Iterator[str]:
+    """Declared source and formal input paths, including historical bindings."""
+    snapshot = (run.get("implementation") or {}).get("source_snapshot") or {}
+    yield from snapshot.get("files", [])
+    for entry in run.get("inputs", []):
+        if isinstance(entry, dict) and entry.get("evidence_role") == "formal_input":
+            yield entry.get("path")
+
+
 def live_evidence_drift(project: Path, run: dict[str, Any]) -> list[str]:
     """Compare current source/team inputs with their preserved execution bytes.
 
@@ -32,18 +80,13 @@ def live_evidence_drift(project: Path, run: dict[str, Any]) -> list[str]:
     remains bound to the declared upstream snapshot, not its latest live output.
     """
     project = project.resolve()
-    snapshot = (run.get("implementation") or {}).get("source_snapshot") or {}
-    frozen_paths = list(snapshot.get("files", []))
-    frozen_paths += [e.get("path") for e in run.get("inputs", [])
-                     if isinstance(e, dict) and e.get("evidence_role") == "formal_input"]
     drifted = []
-    for frozen in frozen_paths:
+    for frozen in execution_inputs(run):
         if not isinstance(frozen, str):
             continue
-        parts = frozen.split("/")
-        if len(parts) <= 3 or parts[0] != "runs" or parts[2] not in {"source", "inputs"}:
+        live = live_path_of(frozen)
+        if not live or frozen.split("/", 3)[2] == "outputs":
             continue
-        live = "/".join(parts[3:])
         frozen_file, live_file = (project / frozen).resolve(), (project / live).resolve()
         if (not frozen_file.is_relative_to(project) or not live_file.is_relative_to(project)
                 or not frozen_file.is_file() or not live_file.is_file()
@@ -67,7 +110,6 @@ def resolve_official_computation(project: Path, results: dict[str, Any] | None =
         referenced.add(str(item["run_id"]))
 
     manifests: dict[str, tuple[str, dict[str, Any]]] = {}
-    superseded: set[str] = set()
     for manifest_path in sorted((project / "runs").glob("*/RUN_MANIFEST.json")):
         rel = manifest_path.relative_to(project).as_posix()
         run = read_object(manifest_path)
@@ -77,10 +119,7 @@ def resolve_official_computation(project: Path, results: dict[str, Any] | None =
         if run_id in manifests:
             raise ValueError(f"duplicate run_id in RUN_MANIFEST files: {run_id}")
         manifests[run_id] = (rel, run)
-        # Same rule the checker uses: only a successful official run retires its parent.
-        parent = str(run.get("parent_run_id", "")).strip()
-        if parent and parent != run_id and run.get("official_run") is True and run.get("status") == "completed" and run.get("exit_code") == 0:
-            superseded.add(parent)
+    superseded = official_successors(run for _, run in manifests.values())
 
     resolved: list[dict[str, Any]] = []
     for run_id in sorted(referenced):
@@ -88,7 +127,7 @@ def resolve_official_computation(project: Path, results: dict[str, Any] | None =
         if candidate is None:
             raise ValueError(f"formal result references a missing run: {run_id}")
         manifest_path, run = candidate
-        if run.get("official_run") is not True or run.get("status") != "completed" or run.get("exit_code") != 0:
+        if not successful_official(run):
             raise ValueError(f"formal result references a run that is not a successful official run: {run_id}")
         if run_id in superseded:
             raise ValueError(
@@ -142,7 +181,6 @@ def resolve_official_computation(project: Path, results: dict[str, Any] | None =
                     f"{result.get('result_id')}"
                 )
 
-            from json_pointer import resolve_json_pointer
             pointer = locator.split("#", 1)[1]
             try:
                 output = json.loads((project / output_path).read_text(encoding="utf-8"))
@@ -174,3 +212,57 @@ def resolve_official_computation(project: Path, results: dict[str, Any] | None =
             }
         )
     return resolved
+
+
+def check_reproduction(project: Path, claim: dict, indexed: dict[str, dict]) -> None:
+    """Compare claim-bound outputs from two distinct, current executions."""
+    reproduction = claim.get("reproduction")
+    comparisons = reproduction.get("comparisons") if isinstance(reproduction, dict) else None
+    if not isinstance(comparisons, list) or not comparisons:
+        raise ValueError("supply a comparison of independently indexed results")
+    evidence = claim.get("evidence", {})
+    cited_results = set(evidence.get("result_ids", []))
+    cited_runs = set(evidence.get("run_ids", []))
+    covered = set()
+    for comparison in comparisons:
+        first, second = (indexed[comparison[key]] for key in ("result_id", "comparison_result_id"))
+        pair = [first, second]
+        run_ids = {item["run_id"] for item in pair}
+        result_ids = {item["result_id"] for item in pair}
+        if len(run_ids) != 2 or not run_ids <= cited_runs or not result_ids <= cited_results:
+            raise ValueError("cite both results and their two distinct runs in the claim")
+        if first["unit"] != second["unit"] or first["scope"] != second["scope"]:
+            raise ValueError("compared results must have the same unit and scope")
+        resolve_official_computation(project, {"results": pair})
+        values = []
+        files = []
+        for item in pair:
+            rel, pointer = item["output_locator"].split("#", 1)
+            prefix = f"runs/{item['run_id']}/outputs/"
+            path = (project / rel).resolve()
+            if not path.is_relative_to(project.resolve() / prefix) or not rel.startswith(prefix):
+                raise ValueError("each comparison needs its own frozen output")
+            value, found = resolve_json_pointer(json.loads(path.read_bytes()), pointer)
+            if not found:
+                raise ValueError("comparison output locator does not resolve")
+            values.append(value)
+            files.append(path)
+        if files[0].samefile(files[1]):
+            raise ValueError("the two runs share the same frozen output file")
+        tolerance = comparison.get("absolute_tolerance", 0)
+        if type(tolerance) not in (int, float) or Fraction(str(tolerance)) < 0:
+            raise ValueError("absolute tolerance must be a finite, nonnegative number")
+        if all(type(v) in (int, float) for v in values):
+            # Compare serialized decimal values exactly at the tolerance boundary.
+            a, b = (Fraction(str(v)) for v in values)
+            matches = abs(a - b) <= Fraction(str(tolerance))
+        else:
+            if tolerance:
+                raise ValueError("non-scalar or categorical outputs require exact comparison")
+            left, right = (json.dumps(v, sort_keys=True, allow_nan=False) for v in values)
+            matches = left == right
+        if not matches:
+            raise ValueError(f"reproduction comparison failed for {first['result_id']}")
+        covered.update(result_ids)
+    if covered != cited_results:
+        raise ValueError("every formal result cited by a reproduced claim needs a comparison")

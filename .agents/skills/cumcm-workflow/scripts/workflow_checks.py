@@ -13,6 +13,7 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Iterable
 
+from canonical_evidence import official_successors, successful_official
 from json_pointer import resolve_json_pointer
 
 from jsonschema import Draft202012Validator
@@ -730,6 +731,8 @@ def require_human_checkpoint(root: Path, stage: str) -> None:
     Reuse the existing contract and snapshot; no new receipt or hash layer.
     These are honest records of a conversation, not authentication of a human.
     """
+    if (root / ".cumcm/pending-decision.json").exists():
+        raise ValueError("interrupted decision pending; run record_decision.py --project <p> --recover")
     names = {"model-design": ("model", "selection_check"),
              "validation": ("claims", "conclusion_check"),
              "delivery": ("delivery", "final_check")}
@@ -916,33 +919,14 @@ def check_cross_question(data: Any, subproblem_ids: set[str], path: str) -> list
     return findings
 
 
-def live_path_of(frozen: Any) -> str | None:
-    """runs/<id>/source/code/solve.py -> code/solve.py (None if not a frozen path)."""
-    parts = str(frozen).split("/")
-    if len(parts) > 3 and parts[0] == "runs" and parts[2] in {"source", "outputs", "inputs"}:
-        return "/".join(parts[3:])
-    return None
-
-
 def superseded_run_ids(root: Path) -> set[str]:
     """A run is superseded when a later run names it as its parent.
 
     Derived, never written back: stamping the old manifest would change its hash
     and stale every accepted decision that bound it.
     """
-    superseded: set[str] = set()
-    for manifest_path in discover_run_manifests(root):
-        manifest, error = read_json(manifest_path)
-        if error or not isinstance(manifest, dict):
-            continue
-        # A failed or exploratory rerun replaces nothing: it cannot back a result,
-        # so letting it retire its parent would invalidate the only usable evidence.
-        if manifest.get("official_run") is not True or manifest.get("status") != "completed" or manifest.get("exit_code") != 0:
-            continue
-        parent = manifest.get("parent_run_id")
-        if nonempty(parent) and str(parent) != str(manifest.get("run_id")):
-            superseded.add(str(parent))
-    return superseded
+    manifests = (read_json(path)[0] for path in discover_run_manifests(root))
+    return set(official_successors(m for m in manifests if isinstance(m, dict)))
 
 
 def discover_run_manifests(root: Path) -> list[Path]:
@@ -1389,7 +1373,9 @@ def check_claims(
     data: Any,
     known_ids: dict[str, set[str]],
     path: str,
-    superseded_ids: set[str] | None = None,
+    superseded_ids: set[str],
+    root: Path,
+    indexed: dict[str, dict],
 ) -> list[Finding]:
     superseded_ids = superseded_ids or set()
     findings = check_envelope(data, "claim_ledger", "validation", path)
@@ -1453,8 +1439,13 @@ def check_claims(
                 findings.append(finding("CLAIM-E019", "error", "semantic", "validation", path, f"{ident} robustness certificate lacks a recognized validation method", related_ids=[ident]))
         if state == "reproduced" and not as_list(refs.get("run_ids")):
             findings.append(finding("CLAIM-E012", "error", "execution", "validation", path, f"reproduced claim has no run evidence: {ident}", related_ids=[ident]))
-        if state == "reproduced" and not isinstance(claim.get("reproduction"), dict):
-            findings.append(finding("CLAIM-E013", "error", "execution", "validation", path, f"reproduced claim lacks claim-specific rerun comparison: {ident}", related_ids=[ident]))
+        if state == "reproduced":
+            from canonical_evidence import check_reproduction
+            try:
+                check_reproduction(root, claim, indexed)
+            except (KeyError, TypeError, ValueError, OSError, AttributeError) as exc:
+                findings.append(finding("CLAIM-E013", "error", "execution", "validation", path,
+                                        f"{ident} has no verified rerun comparison: {exc}", related_ids=[ident]))
         claim_review = claim.get("review")
         if claim_review is not None and (not isinstance(claim_review, dict) or claim_review.get("decision") not in {"accepted", "accepted_with_concerns"}):
             findings.append(finding("CLAIM-W014", "warning", "semantic", "validation", path, f"optional claim-level review is not accepted: {ident}", related_ids=[ident]))
@@ -1728,7 +1719,7 @@ def check_paper_visible_text(data: Any, root: Path, path: str, paper_quality: An
         findings.append(finding("PTEXT-E005", "error", "semantic", "paper", path, "final PDF exposes workflow metadata, internal IDs, evidence states, or local paths"))
     open_flags = [flag for flag in as_list(data.get("review_flags")) if isinstance(flag, dict) and flag.get("resolution_status") == "open"]
     if open_flags:
-        findings.append(finding("PTEXT-W006", "warning", "semantic", "paper", path, "visible-text report has numerical-presentation suggestions to review"))
+        findings.append(finding("PTEXT-W006", "warning", "semantic", "paper", path, "visible-text report has open flags; inspect the indicated text or rendered pages"))
     # The visible-text report is machine-produced. Blocking matches already fail, and
     # human acceptance lives in DELIVERY_MANIFEST.final_check; asking for a second
     # signature on a generated report only bought an extra self-attestation.
@@ -2285,6 +2276,9 @@ def check_project(
             if STAGES.index(stage) >= STAGES.index(threshold):
                 required.append(name)
     contracts, findings = load_contracts(root, required)
+    if (root / ".cumcm/pending-decision.json").exists():
+        findings.append(finding("STATE-E014", "error", "structural", stage, ".cumcm/pending-decision.json",
+                                "interrupted decision pending", remediation="record_decision.py --project <p> --recover"))
     if state_override is not None and "state" in contracts:
         contracts["state"] = state_override
 
@@ -2377,7 +2371,7 @@ def check_project(
                 if run["run_id"] in run_ids:
                     findings.append(finding("RUN-E011", "error", "structural", "computation", rel, f"duplicate run ID: {run['run_id']}"))
                 run_ids.add(run["run_id"])
-                is_official = run.get("official_run") is True and run.get("status") == "completed" and run.get("exit_code") == 0
+                is_official = successful_official(run)
                 if is_official:
                     official_run_ids.add(run["run_id"])
                     # A verdict typed on the command line is a note, not evidence that
@@ -2479,7 +2473,10 @@ def check_project(
     if "claims" in contracts:
         findings.extend(check_schema(contracts["claims"], "claims", "validation", CONTRACT_PATHS["claims"]))
         known = {"facts": fact_ids, "models": model_ids, "runs": run_ids, "results": result_ids, "figures": figure_ids}
-        findings.extend(check_claims(contracts["claims"], known, CONTRACT_PATHS["claims"], superseded_ids))
+        results_data = contracts.get("results")
+        items = as_list(results_data.get("results")) if isinstance(results_data, dict) else []
+        indexed = {item["result_id"]: item for item in items if isinstance(item, dict) and isinstance(item.get("result_id"), str)}
+        findings.extend(check_claims(contracts["claims"], known, CONTRACT_PATHS["claims"], superseded_ids, root, indexed))
         if isinstance(contracts["claims"], dict):
             claim_ids = ids(contracts["claims"].get("claims"), "claim_id")
     known_evidence_ids = set().union(fact_ids, model_ids, run_ids, result_ids, figure_ids, claim_ids)

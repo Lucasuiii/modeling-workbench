@@ -29,7 +29,7 @@ class RequestedRegressions(unittest.TestCase):
             from workflow_fixtures import write_accepted_snapshot
             write_accepted_snapshot(root, 'validation', ['validation/CLAIM_LEDGER.json'])
             manifest = json.loads(initialize(root, 'Demand model', 2026, 'demand').read_text(encoding="utf-8"))
-            write_json(root, 'runs/R1/RUN_MANIFEST.json', {'run_id': 'R1', 'official_run': True,
+            write_json(root, 'runs/R1/RUN_MANIFEST.json', {'run_id': 'R1', 'official_run': True, 'status': 'completed', 'exit_code': 0,
                 'implementation': {'source_snapshot': {'files': ['code/solve.py']}}})
             write_json(root, 'validation/CLAIM_LEDGER.json', {'claims': [{'claim_id': 'C1', 'evidence': {'run_ids': ['R1']}}]})
             result = build_plan(root, ['code/solve.py'])
