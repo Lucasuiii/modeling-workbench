@@ -9,7 +9,7 @@ Spend reasoning on the problem, mathematics, experiments and explanation. Tools 
 
 ## Competition and task routing
 
-For a new competition, read [competition adaptation](references/competition-adaptation.md) to identify the current official requirements and the supported automation boundary. Competition names do not determine methods, page limits or evidence standards. Keep the existing stages, two knobs and three human stops.
+For a new competition, read [competition adaptation](references/competition-adaptation.md) to identify the current official requirements and the supported automation boundary. Competition names do not determine methods, page limits or evidence standards. Keep the existing stages, two knobs and three checkpoints.
 
 Read additional guidance only when the active work needs it:
 
@@ -19,7 +19,7 @@ Read additional guidance only when the active work needs it:
 | Choose a model, audit data, design a useful comparison within the available budget | [Task-driven modeling](references/task-driven-modeling.md) during analysis/model design/computation |
 | English summary, audience-specific memo, references or format adaptation | [Competition writing](references/competition-writing.md) during paper planning |
 
-For paper initialization, pass the actual `--competition` and `--language zh|en` to `init_latex_paper.py`; omitted options retain CUMCM/Chinese behavior. The shared LaTeX/PDF compile, review and source-package chain works across competition names. Generic scaffolds are not official templates: current-rule compliance, page QA and the three human stops still apply. DOCX export is not implemented.
+For paper initialization, pass the actual `--competition` and `--language zh|en` to `init_latex_paper.py`; omitted options retain CUMCM/Chinese behavior. The shared LaTeX/PDF compile, review and source-package chain works across competition names. Generic scaffolds are not official templates: current-rule compliance, page QA and the three checkpoints still apply. DOCX export is not implemented.
 
 ## Start or resume
 
@@ -33,7 +33,7 @@ For paper initialization, pass the actual `--competition` and `--language zh|en`
 
 On first setup or an environment change, run `python3 "$S/doctor.py"`; on resumption or a progress question, run `python3 "$S/project_status.py" --project <p>`. Both print reports without changing project state. Summarize what is usable, what blocks the next action, and the next step; continue authorized work instead of adding a confirmation point. Missing paper tools do not block modeling. A ready preflight is not approval: read the separately reported checkpoint availability. Use [diagnostics](references/diagnostics.md) for probe depth, JSON output, optional model dependencies and exit codes. Do not run diagnostics on every reply or reinstall an already prepared environment.
 
-## Three human stops
+## Three checkpoints (human by default)
 
 | Before | Show the user | Record after their explicit reply |
 |---|---|---|
@@ -41,7 +41,7 @@ On first setup or an environment change, run `python3 "$S/doctor.py"`; on resump
 | Paper writing | Every claim's text, scope, evidence state, and open P0/P1 | `validation` |
 | Final delivery | Current PDF pages, answers, remaining findings and actual delivery files | `delivery` |
 
-Stop the dependent work after presenting the material. Model self-review is useful judgement, **never human acceptance**. A reply before the material was shown does not approve it. If a reviewed claim or model changes, show the revision and obtain a new decision; do not relabel the old acceptance.
+By default, stop the dependent work after presenting the material. Model self-review is useful judgement, **never human acceptance**. A reply before the material was shown does not approve it. If a reviewed claim or model changes, show the revision and obtain a new decision; do not relabel the old acceptance.
 
 After the user accepts **all the presented current material**, one command fills the existing checkpoint, records its snapshot and advances state:
 
@@ -51,6 +51,18 @@ python3 "$S/record_decision.py" --project <p> --stage <stage> \
   --summary <what-the-user-accepted>
 ```
 
+### Explicit stage-scoped delegation
+
+The user may explicitly delegate judgment to the lead agent for a named checkpoint. Never infer delegation from a general request to continue, and never self-grant it. The user may delegate some stages while retaining the others; final delivery remains human-controlled unless separately delegated. Record the actual user-turn reference and only the stages the user explicitly delegated. For each such stage the lead agent must review all current material and record its own identity and decision honestly:
+
+```bash
+python3 "$S/record_delegation.py" --project <p> --stage <stage> --user-turn-ref <actual-user-delegation-turn>
+python3 "$S/record_decision.py" --project <p> --stage <stage> --decision accepted --delegated \
+  --reviewer <actual-lead-agent-identity> --task-turn-ref <same-user-delegation-turn> --summary <review-and-decision>
+```
+
+This records an agent decision, never a human approval. Delegated validation requires a current independent review and package; delegated delivery additionally requires a valid delivery package, final quality and compile records, and every rendered page. `--scope` can add files but cannot remove the default material from a delegated decision. The authorization and reviewed material are snapshot-bound; changed material requires a new review and decision. Delegation does not replace independent review, allow external submission, or authorize a push. Before delivery the lead agent must actually inspect all rendered pages if delivery was delegated. User-turn references are honest conversation records, not authentication.
+
 If a decision write was interrupted, run `record_decision.py --project <p> --recover` before dependent work. Recovery checks the original material and reply. If a binding changed, reopen the named stage and present the revision.
 
 No manual timestamps, presented-ID lists, hashes or state edits. Other stages are technical completions: use the same command **without** `--confirm-human`, after their checks pass, referencing the current task. They do not require another user confirmation. Reopen with `--decision revision_requested`; downstream approvals become unusable. Decisions are honest conversation records, not cryptographic proof that a person answered.
@@ -58,7 +70,7 @@ No manual timestamps, presented-ID lists, hashes or state edits. Other stages ar
 ## Working and finalizing
 
 - `working` permits incomplete model drafts and cheap exploratory runs. Failed exploration never blocks. Use `preflight` while drafting: pending review is visible but does not fail the command.
-- `enforce` requires the three human stops in **both modes**. Official recording and paper entry also check the corresponding stop, so skipping a checker does not silently replace approval with self-review.
+- `enforce` requires the three checkpoints in **both modes**, using human confirmation or explicit stage-scoped delegation. Official recording and paper entry also check the corresponding stop, so skipping a checker does not silently replace approval with self-review.
 - `finalizing` requires complete current evidence, decisions, independent review and delivery binding. Switch with `set_mode.py`. Do not run full finalizing checks before exploratory model selection: formal assertions do not exist yet.
 
 ```bash

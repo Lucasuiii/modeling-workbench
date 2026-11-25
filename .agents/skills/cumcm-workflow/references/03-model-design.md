@@ -32,7 +32,7 @@ Model design does not choose the model. It sets up the comparison so that comput
 
 ## The checkpoint at selection
 
-Before a candidate becomes `selected`, put the choice in front of the person and record the answer in `MODEL_CONTRACT.selection_check`. This is the earliest of the three checkpoints and the cheapest: only exploratory comparisons have been run, so a rejection precedes official computation. It is also the one with the most leverage, because everything downstream inherits the judgement criterion settled here.
+Before a candidate becomes `selected`, present the choice to the checkpoint reviewer and record the decision in `MODEL_CONTRACT.selection_check`. This is the earliest of the three checkpoints and the cheapest: only exploratory comparisons have been run, so a rejection precedes official computation. It is also the one with the most leverage, because everything downstream inherits the judgement criterion settled here.
 
 Show three things:
 
@@ -40,7 +40,7 @@ Show three things:
 2. **Each candidate's `discriminating_evidence`, and whether it can actually discriminate.** If both candidates would produce the same value of the named evidence, the comparison is decorative.
 3. **The `scope` the selected model will claim.** Whatever is written here is what validation must later cover; a scope wider than the evidence is a P0 finding at that point, so it is worth narrowing now.
 
-`presented_candidate_ids` records what was shown. `MODEL-E018` rejects an acceptance that did not present every declared candidate — showing only the winner is not a comparison — and `MODEL-E016` keeps the choice unconfirmed until someone answers. Use `preflight` for drafts; `enforce` and official execution require human acceptance in both modes. After showing all candidates and receiving the reply, use the single `record_decision.py --confirm-human` command in SKILL.md; it fills this checkpoint automatically.
+`presented_candidate_ids` records what was shown. `MODEL-E018` rejects an acceptance that did not present every declared candidate — showing only the winner is not a comparison — and `MODEL-E016` keeps the choice unconfirmed until the reviewer decides. Use `preflight` for drafts. In both modes the user normally reviews the candidates. An explicit delegation for model design lets the lead agent make and record that choice. Use the matching human or delegated command in [SKILL.md](../SKILL.md).
 
 ## Candidates
 
@@ -65,7 +65,7 @@ python3 "$S/record_run.py" --project <p> --candidate CAND-A -- python3 code/try_
 python3 "$S/record_run.py" --project <p> --candidate CAND-B -- python3 code/try_b.py
 ```
 
-Then set exactly one candidate to `selected`, write a `decision_rationale` that refers to what those runs showed, and list them in `evaluation_run_ids`. `cumcm_check.py` reports the comparison under `model_candidates`, and flags a selection with no evaluation run (`MODEL-W014`), a decision with no reason (`MODEL-E014`), a candidate with no discriminator (`MODEL-W012`), and a comparison that never resolved to one winner (`MODEL-E013`). Warnings in `working`; errors once frozen.
+Then set exactly one candidate to `selected`, write a `decision_rationale` that refers to what those runs showed, and list them in `evaluation_run_ids`. `cumcm_check.py` reports the comparison under `model_candidates`, and flags a selection with no evaluation run (`MODEL-W014`), a decision with no reason (`MODEL-E014`), a candidate with no discriminator (`MODEL-W012`), and a comparison that never resolved to one winner (`MODEL-E013`). Warnings in `working`; errors once frozen. A component may explain its method in its own words. `MODEL-W017` reports a concrete mismatch when the whole method label names another candidate. Review the derivation and implementation to assess free-text descriptions.
 
 One candidate is allowed when one model is clearly right — that only raises `MODEL-W007`. What is not allowed is claiming a comparison you did not make.
 

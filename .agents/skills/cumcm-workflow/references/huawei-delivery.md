@@ -1,6 +1,6 @@
 # Huawei Cup / graduate modeling contest delivery
 
-Read this for 华为杯 / 中国研究生数学建模竞赛 (Huawei Cup, GMCM/CPGMCM/CPMCM). Reuse the existing stages, evidence and three human checkpoints. This guide supplies adaptation mechanics, not a permanent edition of organizer rules. The agent performs these commands; users supply the current official materials and review the final pages/files.
+Read this for 华为杯 / 中国研究生数学建模竞赛 (Huawei Cup, GMCM/CPGMCM/CPMCM). Reuse the existing stages, evidence and three checkpoints (human by default). This guide supplies adaptation mechanics, not a permanent edition of organizer rules. The agent performs these commands; users supply the current official materials and review the final pages/files unless delivery is explicitly delegated.
 
 ## Editable Huawei typography preset
 
@@ -85,7 +85,7 @@ The name in the final PDF declaration must match the name required for actual up
 
 ## Freeze, review, then submit the exact bytes
 
-Create the submission record **before** the existing final human review, so the approval covers it and the exact rendered PDF. The record is a local byte-identity check, not an organizer upload receipt and not another human checkpoint. Submission remains user-controlled. Use the official platform/tool when the current rules require it.
+Create the submission record **before** the existing final checkpoint review, so the approval covers it and the exact rendered PDF. The record is a local byte-identity check, not an organizer upload receipt and not another checkpoint. Submission remains user-controlled. Use the official platform/tool when the current rules require it.
 
 When the current rules use MD5 -> PDF -> attachment stages, the MD5 must come from the exact PDF that will be uploaded. After sending MD5, do not recompile, edit metadata, optimize/compress, stamp, or otherwise regenerate the PDF. Re-run the read-only check before upload; a mismatch means stop, not silently issue a replacement MD5. Keep any platform acknowledgement separately as user-supplied evidence.
 

@@ -33,8 +33,8 @@ def write_json(root: Path, rel: str, payload: dict) -> None:
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
 
-def run_script(name: str, *args: str) -> subprocess.CompletedProcess:
-    return subprocess.run([sys.executable, str(SCRIPTS / name), *args], check=False, capture_output=True, text=True)
+def run_script(name: str, *args: str, encoding: str | None = None) -> subprocess.CompletedProcess:
+    return subprocess.run([sys.executable, str(SCRIPTS / name), *args], check=False, capture_output=True, text=True, encoding=encoding)
 
 
 SOLVER = """import json, pathlib
@@ -164,4 +164,17 @@ def record_official(project: Path) -> None:
         "--check", "enumeration coverage",
     )
     assert indexed.returncode == 0, indexed.stdout + indexed.stderr
+
+
+
+def model_with_candidates(root, statuses):
+    path = root / 'model/MODEL_CONTRACT.json'
+    model = json.loads(path.read_text(encoding="utf-8"))
+    model['components'][0]['candidates'] = [
+        {'candidate_id': f'CAND-{i}', 'status': status, 'method': 'enumeration',
+         'why_considered': 'finite search', 'discriminating_evidence': ['exact small instance'],
+         'decision_rationale': 'compared against exact solution'}
+        for i, status in enumerate(statuses)]
+    model['selection_check']['presented_candidate_ids'] = [f'CAND-{i}' for i in range(len(statuses))]
+    write_json(root, 'model/MODEL_CONTRACT.json', model)
 

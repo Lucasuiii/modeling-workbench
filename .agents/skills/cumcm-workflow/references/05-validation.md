@@ -24,7 +24,7 @@ After a full review returns open P0 findings, rerunning the package builder in a
 
 ## The one checkpoint in this block
 
-Before building `validation-paper`, put the conclusions in front of the person and record the answer in `CLAIM_LEDGER.conclusion_check`. This is the cheap place to hear no: a rejection here costs a recomputation, the same rejection at delivery costs a rewritten paper.
+By default, before building `validation-paper`, put the conclusions in front of the person and record the answer in `CLAIM_LEDGER.conclusion_check`. This is the cheap place to hear no: a rejection here costs a recomputation, the same rejection at delivery costs a rewritten paper.
 
 Show the claim text, its `scope`, its evidence state, and every open P0/P1 from the review. Do not show run ids, hashes or evidence chains — nobody can audit those by eye, and putting them on the page only dilutes the few things a person can actually judge. `scope` is the one worth reading aloud: it is where a rule that only holds at the point it was derived from becomes visible.
 
@@ -34,7 +34,7 @@ Create `CLAIM_LEDGER.json` from the reviewed evidence. Each paper-bearing claim 
 
 Before paper writing, build `validation-paper`. For a targeted result, the builder follows only the structured `previous_review_path` lineage and applies the latest status per finding ID: open/accepted P1 concerns remain, while resolved findings drop out. Its limitations come from supported paper-eligible claim limitations, those current P1 concerns, and explicit model applicability, assumptions, and known limitations—not contradicted/unsupported claims or model `scope`. Its `representation_candidates` proactively identify trend, multi-group comparison, distribution, sensitivity, model-performance, and spatial/network/clustering evidence. A fresh paper task reads this compact handoff first, chooses prose/equation/table/figure, and does not scan full run/debug history.
 
-After the explicit reply, use `record_decision.py --stage validation --decision accepted --confirm-human` with the reply reference and summary (see SKILL.md). It records the existing fields and advances state; paper handoff and initialization reject missing or stale human acceptance.
+If the user explicitly delegated validation, the lead agent instead reviews all conclusions and records its own decision using the stage-scoped delegation commands in SKILL.md; the independent review above is still required. Otherwise, after the explicit reply, use `record_decision.py --stage validation --decision accepted --confirm-human` with the reply reference and summary (see SKILL.md). It records the existing fields and advances state; paper handoff and initialization reject missing or stale checkpoint decisions.
 
 
 ## Reproduced claims

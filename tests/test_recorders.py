@@ -550,6 +550,27 @@ class CandidateSelectionTests(unittest.TestCase):
             evidence = {item["candidate_id"]: item["evaluation_run_ids"] for item in comparison["candidates"]}
             self.assertEqual(evidence["CAND-ENUM"], ["RUN-EVAL-ENUM"])
 
+    def test_method_warning_requires_a_conflicting_candidate_name(self):
+        with tempfile.TemporaryDirectory() as temp:
+            project = make_project(Path(temp))
+            model = self.with_candidates(project)
+            component = model["components"][0]
+            for method, conflicts in [
+                ("Evaluate every feasible allocation and take the minimum", False),
+                ("Complete Enumeration", False),
+                (" Greedy FIRST-fit ", True),
+                ("Compare the optimum with greedy first-fit", False),
+            ]:
+                with self.subTest(method=method):
+                    component["method"] = method
+                    write_json(project, "model/MODEL_CONTRACT.json", model)
+                    findings, _ = check_project(project, "model-design")
+                    warnings = [item for item in findings if item.rule_id == "MODEL-W017"]
+                    self.assertEqual(bool(warnings), conflicts)
+                    if conflicts:
+                        self.assertIn("CAND-GREEDY", warnings[0].related_ids)
+                        self.assertIn("CAND-ENUM", warnings[0].related_ids)
+
     def test_a_selection_without_any_evaluation_run_is_flagged(self):
         with tempfile.TemporaryDirectory() as temp:
             project = make_project(Path(temp))

@@ -212,14 +212,14 @@ Four cross-stage interfaces only: `modeling-computation`, `computation-validatio
 
 ## 3. Two knobs
 
-v0.6 deleted the `strict`/`sprint` profile. `mode` (in state) decides what must be complete; `--gate-mode` decides whether human gates count toward blocking.
+v0.6 deleted the `strict`/`sprint` profile. `mode` (in state) decides what must be complete; `--gate-mode` decides whether checkpoint decisions count toward blocking.
 
 - `working`: official-input protection, real execution before citation, exact locators, non-fabrication. A draft model contract is enough, `CROSS_QUESTION_LEDGER.json` is optional, stage ordering is advisory.
 - `finalizing`: frozen model contract, stage decisions and snapshots, fresh handoffs, bounded independent review, paper/PDF QA, delivery binding.
 
 Stage statuses: `not_started`, `in_progress`, `passed`, `needs_revision`.
 
-The three required human stops are model selection, conclusions before paper writing, and final delivery. After showing current material and receiving an explicit reply, use `record_decision.py --decision accepted --confirm-human` with `--stage`, `--task-turn-ref` and `--summary`; it fills existing checkpoint fields and advances state. Technical stages omit `--confirm-human` after passing checks. Model self-review is not human acceptance; records depend on truthful references to user replies. `preflight` reports pending review without blocking exploration; `enforce` requires acceptance in both modes, as do the corresponding official-run and paper entry points.
+The three checkpoints are model selection, conclusions before paper writing, and final delivery; each defaults to user confirmation. The user may explicitly delegate a named stage to the lead agent using the stage-scoped commands in the Skill; final delivery needs separate delegation and independent review remains required. After showing current material and receiving an explicit reply, use `record_decision.py --decision accepted --confirm-human` with `--stage`, `--task-turn-ref` and `--summary`; it fills existing checkpoint fields and advances state. Technical stages omit `--confirm-human` after passing checks. Model self-review is not human acceptance; records depend on truthful references to user replies. `preflight` reports pending review without blocking exploration; `enforce` requires acceptance in both modes, as do the corresponding official-run and paper entry points.
 
 Findings are graded by consequence: hard invariant / `P0` blocks; `P1` (assumptions, baselines, sensitivity — and **everything about exploratory runs**) stays visible; `P2` never enters the gate.
 

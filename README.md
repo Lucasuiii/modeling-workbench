@@ -318,12 +318,12 @@ v0.6 没有 profile。只有：
 | `mode`（存在 state 里） | `working` / `finalizing` | **什么必须完整** |
 | `--gate-mode` | `preflight` / `enforce` | **人工门禁是否计入阻断** |
 
-- `working`：草稿模型合同即可、`CROSS_QUESTION_LEDGER.json` 可选、阶段排序只是 warning。官方输入保护、真实执行、精确 locator、非伪造照样强制。`preflight` 显示待审查而不阻断探索；`enforce` 在两种模式都要求人工确认。正式运行和论文入口也检查对应确认。
+- `working`：草稿模型合同即可、`CROSS_QUESTION_LEDGER.json` 可选、阶段排序只是 warning。官方输入保护、真实执行、精确 locator、非伪造照样强制。`preflight` 显示待审查而不阻断探索；`enforce` 在两种模式都要求当前有效的关卡决定：默认人工确认，也可采用该阶段经用户明确授权的主代理决定。正式运行和论文入口也检查对应确认。
 - `finalizing`：完整模型合同（且 `verification_plan` 要对应到官方运行真的记录过的断言）、目标及上游阶段全部 `passed`、当前 accepted decision 与 snapshot、fresh handoff、独立复核、PDF QA、delivery 绑定。
 
 阶段状态只有四个：`not_started` / `in_progress` / `passed` / `needs_revision`。
 
-三个必需人工确认点是模型选择、写论文前的结论、最终交付。展示当前材料并收到明确回复后，用 `record_decision.py --decision accepted --confirm-human`，指定 `--stage`、`--task-turn-ref` 和 `--summary`；命令自动填入现有确认字段并推进状态。技术阶段检查通过后省略 `--confirm-human`。模型自审不算人工确认，记录仍依赖如实引用用户回复。
+三个关卡是模型选择、写论文前的结论、最终交付，默认都由用户确认。用户可以明确逐阶段授权主代理判断，具体记录方法见 Skill；最终交付需要单独授权，独立审查仍然必需。展示当前材料并收到明确回复后，用 `record_decision.py --decision accepted --confirm-human`，指定 `--stage`、`--task-turn-ref` 和 `--summary`；命令自动填入现有确认字段并推进状态。技术阶段检查通过后省略 `--confirm-human`。模型自审不算人工确认，记录仍依赖如实引用用户回复。
 
 ---
 

@@ -31,14 +31,32 @@ def inspect_project(root: Path) -> dict:
             continue
         try:
             require_human_checkpoint(root, checkpoint)
-            checkpoints.append({"stage": checkpoint, "dependent_action": dependent, "status": "accepted_current", "reason": "existing action boundary passed"})
+            contract_name, field = {"model-design": ("model", "selection_check"), "validation": ("claims", "conclusion_check"), "delivery": ("delivery", "final_check")}[checkpoint]
+            contract = json.loads((root / CONTRACT_PATHS[contract_name]).read_text(encoding="utf-8"))
+            authority = "delegated_lead_agent" if contract[field].get("reviewer_kind") == "lead_agent" else "human_user"
+            checkpoints.append({"stage": checkpoint, "dependent_action": dependent, "status": "accepted_current", "authority": authority, "reason": f"current {authority} decision"})
         except ValueError as exc:
-            checkpoints.append({"stage": checkpoint, "dependent_action": dependent, "status": "not_ready", "reason": str(exc)})
+            try:
+                delegation = json.loads((root / ".cumcm/delegations" / f"{checkpoint}.json").read_text(encoding="utf-8"))
+                delegated = (isinstance(delegation, dict) and delegation.get("stage") == checkpoint
+                             and isinstance(delegation.get("user_turn_ref"), str)
+                             and bool(delegation["user_turn_ref"].strip()))
+            except (OSError, ValueError):
+                delegated = False
+            reason = str(exc)
+            if delegated and ("awaits the user" in reason or "awaits the user's" in reason):
+                reason = "lead agent review and decision are pending"
+            checkpoints.append({"stage": checkpoint, "dependent_action": dependent, "status": "not_ready",
+                                "authority": "delegated_lead_agent" if delegated else "human_user",
+                                "reason": ("delegated decision pending: " if delegated else "user decision pending: ") + reason})
     blocked_checkpoints = [c for c in checkpoints if c["status"] == "not_ready"]
     if technical:
         action = "先修复列出的证据或结构错误，再重新检查；根据规则位置定位受影响材料。"
     elif blocked_checkpoints:
-        action = "先按关卡原因核对候选方案、待审材料及确认记录；没有当前有效确认时，展示材料并等待用户明确答复，依赖该确认的工作不能开始。"
+        if any(item.get("authority") == "delegated_lead_agent" for item in blocked_checkpoints):
+            action = "核对已授权关卡的待审材料及前置证据，由主代理审查并记录决定；其余未授权关卡仍等待用户答复。"
+        else:
+            action = "当前关卡依赖的工作还不能开始。请查看决定权限，由用户或获授权的主代理核对材料并记录决定。"
     elif review:
         action = "准备并展示当前待审材料，取得明确确认后记录决定；依赖该确认的工作必须等待，其他探索按阶段指南继续。"
     elif warnings:
