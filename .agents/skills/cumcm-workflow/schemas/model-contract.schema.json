@@ -162,6 +162,7 @@
         "reviewer_kind": {
           "enum": [
             "human_user",
+            "lead_agent",
             "same_context_model"
           ]
         },

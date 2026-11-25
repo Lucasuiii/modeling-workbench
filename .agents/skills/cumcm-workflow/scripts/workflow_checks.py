@@ -698,7 +698,7 @@ def check_selection_check(data: Any, path: str) -> list[Finding]:
     if not declared and not data.get("selection_check"):
         return findings
     check = data.get("selection_check")
-    if not isinstance(check, dict) or check.get("decision") != "accepted" or check.get("reviewer_kind") != "human_user":
+    if not isinstance(check, dict) or check.get("decision") != "accepted" or check.get("reviewer_kind") not in {"human_user", "lead_agent"}:
         findings.append(finding("MODEL-E016", "error", "semantic", "model-design", path, "the model choice must be confirmed before it is computed against", gate_only=True))
         return findings
     if not nonempty(check.get("reviewer")) or not nonempty(check.get("reviewed_at")):
@@ -728,6 +728,72 @@ def require_resolved_model(data: dict) -> None:
             raise ValueError("model comparison is unresolved: each component needs exactly one selected candidate and all others rejected")
 
 
+def require_delegated_prerequisites(root: Path, stage: str) -> list[str]:
+    """Check independent evidence and return extra files to bind to a delegated decision."""
+    if stage not in {"validation", "delivery"}:
+        return []
+    names = ["independent_review_package", "independent_review_result", "handoff_computation_validation"]
+    if stage == "delivery":
+        names += ["paper_quality", "latex_template", "delivery", "compile_receipt", "paper_visible_text",
+                  "paper_plan", "handoff_validation_paper", "handoff_paper_delivery"]
+    objects = {}
+    for name in names:
+        rel = CONTRACT_PATHS[name]
+        obj, error = read_json(root / rel)
+        if error or not isinstance(obj, dict):
+            raise ValueError(f"delegated {stage} requires current {rel}")
+        objects[name] = obj
+    findings = []
+    for name in names:
+        findings.extend(check_schema(objects[name], name, owning_stage_for_contract(name), CONTRACT_PATHS[name]))
+    schema_errors = [item for item in findings if item.severity == "error"]
+    if schema_errors:
+        raise ValueError(f"delegated {stage} prerequisites failed: {schema_errors[0].rule_id}: {schema_errors[0].message}")
+    package, review = objects["independent_review_package"], objects["independent_review_result"]
+    findings.extend(check_independent_review_package(package, root, CONTRACT_PATHS["independent_review_package"]))
+    findings.extend(check_independent_review_result(review, root, CONTRACT_PATHS["independent_review_result"], package))
+    findings.extend(check_handoff(objects["handoff_computation_validation"], root, CONTRACT_PATHS["handoff_computation_validation"], "computation-validation"))
+    findings.extend(check_task_separation(objects))
+    if review.get("verdict") not in {"accepted", "accepted_with_concerns"}:
+        raise ValueError("delegated decision requires an accepted independent review")
+    extra = [CONTRACT_PATHS[name] for name in names]
+    if stage == "delivery":
+        quality, latex, delivery, receipt = (objects[n] for n in ("paper_quality", "latex_template", "delivery", "compile_receipt"))
+        for name, transition in (("handoff_validation_paper", "validation-paper"),
+                                 ("handoff_paper_delivery", "paper-delivery")):
+            findings.extend(check_handoff(objects[name], root, CONTRACT_PATHS[name], transition))
+        findings.extend(check_paper_visible_text(objects["paper_visible_text"], root, CONTRACT_PATHS["paper_visible_text"], quality))
+        facts, error = read_json(root / CONTRACT_PATHS["facts"])
+        if error or not isinstance(facts, dict):
+            raise ValueError("delegated delivery requires current problem facts")
+        subproblem_ids = ids(facts.get("subproblems"), "subproblem_id")
+        findings.extend(check_paper_quality(quality, root, CONTRACT_PATHS["paper_quality"], subproblem_ids))
+        findings.extend(check_delivery(delivery, root, CONTRACT_PATHS["delivery"]))
+        findings.extend(check_compile_receipt(receipt, root, CONTRACT_PATHS["compile_receipt"], quality, latex, delivery))
+        layout = quality.get("layout_report")
+        count = layout.get("page_count") if isinstance(layout, dict) else None
+        if quality.get("paper_status") != "final" or not isinstance(count, int) or isinstance(count, bool) or count < 1:
+            raise ValueError("delegated delivery requires a final reviewed paper and rendered pages")
+        pages = layout.get("rendered_pages")
+        if (not isinstance(pages, list) or any(not isinstance(page, int) or isinstance(page, bool) for page in pages)
+                or set(pages) != set(range(1, count + 1))):
+            raise ValueError("delegated delivery requires every rendered page")
+        page_files = {}
+        for path in (root / ".cumcm/tmp/pages").glob("page-*.png"):
+            match = re.fullmatch(r"page-(\d+)\.png", path.name)
+            if match:
+                page_files.setdefault(int(match.group(1)), []).append(path)
+        for page in range(1, count + 1):
+            paths = page_files.get(page, [])
+            if len(paths) != 1 or paths[0].read_bytes()[:8] != b"\x89PNG\r\n\x1a\n":
+                raise ValueError(f"delegated delivery requires rendered page {page}")
+            extra.append(paths[0].relative_to(root).as_posix())
+    errors = [item for item in findings if item.severity == "error" and not item.gate_only]
+    if errors:
+        raise ValueError(f"delegated {stage} prerequisites failed: {errors[0].rule_id}: {errors[0].message}")
+    return extra
+
+
 def require_human_checkpoint(root: Path, stage: str) -> None:
     """Action boundary, not a full finalizing check (which needs future runs).
 
@@ -747,8 +813,13 @@ def require_human_checkpoint(root: Path, stage: str) -> None:
     check = data.get(field)
     if not isinstance(check, dict):
         raise ValueError(f"{stage} awaits the user; no checkpoint recorded")
-    if check.get("decision") != "accepted" or check.get("reviewer_kind") != "human_user":
+    if check.get("decision") != "accepted" or check.get("reviewer_kind") not in {"human_user", "lead_agent"}:
         raise ValueError(f"{stage} awaits the user's explicit decision; model self-review cannot approve it")
+    if check.get("reviewer_kind") == "lead_agent":
+        authority_rel = f".cumcm/delegations/{stage}.json"
+        authority, authority_error = read_json(root / authority_rel)
+        if authority_error or not isinstance(authority, dict) or authority.get("stage") != stage or not nonempty(authority.get("user_turn_ref")):
+            raise ValueError(f"{stage} has no valid user delegation")
     checks = {"model-design": lambda: check_selection_check(data, rel),
               "validation": lambda: check_conclusion_check(data, rel),
               "delivery": lambda: check_final_check(data, rel, data.get("compile"))}
@@ -764,6 +835,18 @@ def require_human_checkpoint(root: Path, stage: str) -> None:
         snapshot, error = read_json(snapshot_path)
         records = snapshot.get("artifacts", []) if isinstance(snapshot, dict) else []
         record = next((item for item in records if item.get("path") == rel), None)
+        if check.get("reviewer_kind") == "lead_agent":
+            if not any(item.get("path") == authority_rel for item in records if isinstance(item, dict)):
+                raise ValueError(f"{stage} snapshot does not bind user delegation")
+            try:
+                events = [json.loads(line) for line in (root / ".cumcm/decisions.jsonl").read_text(encoding="utf-8").splitlines() if line.strip()]
+                matching = [event for event in events if event.get("decision_id") == snapshot.get("decision_id")]
+            except (OSError, ValueError, AttributeError):
+                matching = []
+            if (len(matching) != 1 or matching[0].get("stage") != stage or matching[0].get("decision") != "accepted"
+                    or matching[0].get("delegated") is not True or matching[0].get("reviewer") != check.get("reviewer")
+                    or matching[0].get("task_turn_ref") != authority.get("user_turn_ref") or matching[0].get("scope") != records):
+                raise ValueError(f"{stage} delegated decision does not match its authorization and snapshot")
         if error or not record or any(
             not isinstance(item, dict)
             or (target := safe_project_path(root, item.get("path"))) is None
@@ -771,6 +854,10 @@ def require_human_checkpoint(root: Path, stage: str) -> None:
             for item in records
         ):
             raise ValueError(f"{stage} material changed after approval; show the revision and obtain a new decision")
+    if check.get("reviewer_kind") == "lead_agent":
+        required = set(stage_scope_paths(root, stage) + require_delegated_prerequisites(root, stage))
+        if not required.issubset({item.get("path") for item in records if isinstance(item, dict)}):
+            raise ValueError(f"{stage} snapshot does not bind all required delegated evidence")
 
 
 def check_model_candidates(
@@ -846,9 +933,20 @@ def check_model_candidates(
                     related_ids=[ident],
                 )
             )
-        elif nonempty(component.get("method")) and nonempty(selected[0].get("method")):
-            if selected[0]["method"].strip().casefold() not in component["method"].strip().casefold():
-                findings.append(finding("MODEL-W017", "warning", "semantic", "model-design", path, f"{ident} method does not mention the selected candidate's method", related_ids=[ident]))
+        elif isinstance(component.get("method"), str):
+            # Prose can paraphrase a method or discuss a rejected baseline.
+            # A complete competing label is a concrete inconsistency we can report.
+            method = component["method"].strip().casefold()
+            matches = [candidate for candidate in candidates
+                       if isinstance(candidate.get("method"), str)
+                       and method and candidate["method"].strip().casefold() == method]
+            if matches and selected[0] not in matches:
+                findings.append(finding(
+                    "MODEL-W017", "warning", "semantic", "model-design", path,
+                    f"{ident} method names an alternative to the selected candidate",
+                    related_ids=[ident, item_id(selected[0], "candidate_id"),
+                                 *(item_id(candidate, "candidate_id") for candidate in matches)],
+                ))
     return findings
 
 
@@ -1358,7 +1456,7 @@ def check_conclusion_check(data: dict[str, Any], path: str) -> list[Finding]:
     """
     findings: list[Finding] = []
     check = data.get("conclusion_check")
-    if not isinstance(check, dict) or check.get("decision") != "accepted" or check.get("reviewer_kind") != "human_user":
+    if not isinstance(check, dict) or check.get("decision") != "accepted" or check.get("reviewer_kind") not in {"human_user", "lead_agent"}:
         findings.append(finding("CLAIM-E021", "error", "semantic", "validation", path, "the conclusions must be confirmed before the paper is written", gate_only=True))
         return findings
     if not nonempty(check.get("reviewer")) or not nonempty(check.get("reviewed_at")):
@@ -1561,7 +1659,7 @@ def check_final_check(data: dict[str, Any], path: str, compile_record: Any) -> l
     """
     findings: list[Finding] = []
     check = data.get("final_check")
-    if not isinstance(check, dict) or check.get("decision") != "accepted" or check.get("reviewer_kind") != "human_user":
+    if not isinstance(check, dict) or check.get("decision") != "accepted" or check.get("reviewer_kind") not in {"human_user", "lead_agent"}:
         findings.append(finding("DELIVERY-E011", "error", "semantic", "delivery", path, "the final check before submission must be accepted", gate_only=True))
         return findings
     if not nonempty(check.get("reviewer")) or not nonempty(check.get("reviewed_at")):
@@ -2445,6 +2543,14 @@ def check_project(
         runs_known = STAGES.index(stage) >= STAGES.index("computation")
         findings.extend(check_model_candidates(contracts["model"], run_ids, run_candidates, CONTRACT_PATHS["model"], mode, runs_known))
         findings.extend(check_selection_check(contracts["model"], CONTRACT_PATHS["model"]))
+    for checkpoint, contract, field in (("model-design", "model", "selection_check"), ("validation", "claims", "conclusion_check"), ("delivery", "delivery", "final_check")):
+        data = contracts.get(contract)
+        check = data.get(field) if isinstance(data, dict) else None
+        if STAGES.index(stage) >= STAGES.index(checkpoint) and isinstance(check, dict) and check.get("reviewer_kind") == "lead_agent":
+            try:
+                require_human_checkpoint(root, checkpoint)
+            except ValueError as exc:
+                findings.append(finding("AUTH-E001", "error", "semantic", checkpoint, CONTRACT_PATHS[contract], str(exc), gate_only=True))
     if frozen and "model" in contracts and STAGES.index(stage) >= STAGES.index("computation"):
         findings.extend(check_model_verification(contracts["model"], capability_assertions, CONTRACT_PATHS["model"]))
     if "capabilities" in contracts:

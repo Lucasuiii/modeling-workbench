@@ -14,7 +14,7 @@ Read this reference when creating or checking v0.6 files. JSON Schemas define co
 | Delivery | `COMPILE_RECEIPT.json` (written by `record_compile.py`), `DELIVERY_MANIFEST.json` |
 | Cross-stage | `handoffs/<transition>/HANDOFF.json` |
 
-v0.6 removed the per-artifact `review` envelope: formal stage approval lives only in the append-only decision log. Three human checkpoints survive, and each records what the person was shown rather than only what they decided: `model.selection_check` (`presented_candidate_ids`), `claim_ledger.conclusion_check` (`presented_claim_ids`) and `delivery.final_check` (`presented_pages`). `paper_quality.content_report` and `layout_report` are reports, not approvals — they carry no decision. `claim_ledger.independent_review` and the optional `figure.visual_review` are unchanged.
+v0.6 removed the per-artifact `review` envelope: formal stage approval lives only in the append-only decision log. Three checkpoints remain human by default; explicitly delegated stages record the lead agent as reviewer. Each records the material reviewed: `model.selection_check` (`presented_candidate_ids`), `claim_ledger.conclusion_check` (`presented_claim_ids`) and `delivery.final_check` (`presented_pages`). `paper_quality.content_report` and `layout_report` are reports, not approvals — they carry no decision. `claim_ledger.independent_review` and the optional `figure.visual_review` are unchanged.
 
 `PAPER_TRACEABILITY.json` was deleted. The property it promised — no internal IDs in visible content — is measured directly on the rendered PDF by `paper_visible_text_check.py`. Recording an accepted decision automatically writes a derived stage snapshot. Snapshot files require no human fields and can be regenerated from the accepted scope.
 

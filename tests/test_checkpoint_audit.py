@@ -6,24 +6,12 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from recorder_fixtures import make_project, run_script, write_json
+from recorder_fixtures import make_project, run_script, write_json, model_with_candidates
 from workflow_fixtures import write_accepted_snapshot
 from workflow_checks import require_human_checkpoint
 from workflow_checks import sha256
 from build_handoff import build
 from record_decision import main as record_decision_main
-
-
-def model_with_candidates(root, statuses):
-    path = root / 'model/MODEL_CONTRACT.json'
-    model = json.loads(path.read_text(encoding="utf-8"))
-    model['components'][0]['candidates'] = [
-        {'candidate_id': f'CAND-{i}', 'status': status, 'method': 'enumeration',
-         'why_considered': 'finite search', 'discriminating_evidence': ['exact small instance'],
-         'decision_rationale': 'compared against exact solution'}
-        for i, status in enumerate(statuses)]
-    model['selection_check']['presented_candidate_ids'] = [f'CAND-{i}' for i in range(len(statuses))]
-    write_json(root, 'model/MODEL_CONTRACT.json', model)
 
 
 def confirm(root, *extra):

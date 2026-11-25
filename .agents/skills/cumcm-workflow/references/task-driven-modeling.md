@@ -39,7 +39,7 @@ Use candidate `discriminating_evidence` and the existing `verification_plan` to 
 
 Prioritize a cheap feasibility or sanity check, a task-relevant baseline, and the most consequential unresolved validation risk. Additional ablations, seeds or perturbations are justified when they can change the choice or support an intended claim; they are not compulsory decorations. Fix a useful stopping condition from the deadline, cost, decision precision or lack of expected improvement. If a required check remains unresolved, report the gap rather than converting a budget limit into a pass.
 
-Reuse existing evidence only while its inputs, method, definitions and scope remain applicable. Keep explorations separate from official evidence. Paper-stage requests for a new experiment return to computation and the affected review; they do not authorize new numbers in the manuscript. Preserve all three existing human stops and the existing P0/P1 meanings.
+Reuse existing evidence only while its inputs, method, definitions and scope remain applicable. Keep explorations separate from official evidence. Paper-stage requests for a new experiment return to computation and the affected review; they do not authorize new numbers in the manuscript. Preserve all three existing checkpoints, human by default or explicitly delegated by stage, and the existing P0/P1 meanings.
 
 ## Explain the mathematical commitment
 

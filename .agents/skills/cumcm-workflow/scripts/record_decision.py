@@ -143,7 +143,13 @@ def finish_pending(root: Path, pending: dict) -> None:
     if event["decision"] == "accepted":
         checkpoint = pending.get("checkpoint")
         checkpoint_rel = CHECKPOINT_PATHS[stage][0] if checkpoint is not None else None
-        if pending.get("default_scope"):
+        if pending.get("delegated"):
+            from workflow_checks import require_delegated_prerequisites
+            required = set(stage_scope_paths(root, stage) + require_delegated_prerequisites(root, stage))
+            required.add(f".cumcm/delegations/{stage}.json")
+            if not required.issubset({entry["path"] for entry in event["scope"]}):
+                raise ValueError(f"{stage} required material changed; record revision_requested for {stage}")
+        elif pending.get("default_scope"):
             actual = set(stage_scope_paths(root, stage))
             if actual != {entry["path"] for entry in event["scope"]}:
                 changed = sorted(actual.symmetric_difference(entry["path"] for entry in event["scope"]))
@@ -199,12 +205,13 @@ def main() -> int:
     parser.add_argument("--reviewer", default="agent")
     parser.add_argument("--task-turn-ref")
     parser.add_argument("--summary", dest="user_visible_summary")
+    parser.add_argument("--delegated", action="store_true", help="lead agent decision only after explicit stage-scoped user delegation")
     parser.add_argument("--confirm-human", action="store_true", help="only after the user explicitly accepted ALL currently presented material; fills the existing checkpoint fields")
-    parser.add_argument("--scope", action="append", default=[], help="project-relative file; repeat to override the stage defaults")
+    parser.add_argument("--scope", action="append", default=[], help="project-relative file; repeat to override stage defaults, or add to them with --delegated")
     args = parser.parse_args()
 
     if args.recover:
-        if any((args.stage, args.decision, args.task_turn_ref, args.user_visible_summary, args.confirm_human,
+        if any((args.stage, args.decision, args.task_turn_ref, args.user_visible_summary, args.confirm_human, args.delegated,
                 args.scope, args.decision_id, args.reviewer != "agent")):
             parser.error("--recover takes only --project")
     elif not all((args.stage, args.decision, args.task_turn_ref, args.user_visible_summary)):
@@ -247,20 +254,43 @@ def _record_decision(args, root: Path, parser: argparse.ArgumentParser, log_path
                 parser.error(f"scope file is missing or unsafe: {rel}")
             scope.append(target.relative_to(root).as_posix())
         args.scope = list(dict.fromkeys(scope))
+    if args.delegated:
+        if args.confirm_human or args.decision != "accepted" or args.stage not in CHECKPOINT_PATHS:
+            parser.error("--delegated applies only to a delegated checkpoint acceptance")
+        if not args.reviewer.strip() or args.reviewer in {"agent", "user", "human"}:
+            parser.error("--delegated requires the actual lead agent identity in --reviewer")
+        authority_path = root / ".cumcm/delegations" / f"{args.stage}.json"
+        try:
+            authority = json.loads(authority_path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            parser.error("missing explicit user delegation for this stage")
+        if not isinstance(authority, dict) or authority.get("stage") != args.stage or authority.get("user_turn_ref") != args.task_turn_ref or not args.task_turn_ref.strip():
+            parser.error("delegation stage or user turn reference does not match")
+
+        from workflow_checks import require_delegated_prerequisites
+        try:
+            extra_scope = require_delegated_prerequisites(root, args.stage)
+        except (OSError, ValueError, TypeError) as exc:
+            parser.error(str(exc))
+    else:
+        extra_scope = []
+
     events = load_events(log_path)
-    # A crash after removing the intent can hide the success message from the caller.
-    # Recognize the identical reply, but never bind it to newly edited material.
     last = events[-1] if events else {}
     reviewer = "user" if args.confirm_human and args.reviewer == "agent" else args.reviewer
     if (last and args.decision_id in (None, last["decision_id"])
+            and bool(last.get("delegated")) == args.delegated
             and (last.get("stage"), last.get("decision"), last.get("reviewer"), last.get("task_turn_ref"),
                  last.get("user_visible_summary")) ==
                 (args.stage, args.decision, reviewer, args.task_turn_ref, args.user_visible_summary)
             and not (root / ".cumcm/pending-decision.json").exists()):
         if args.decision == "accepted":
-            expected = set(args.scope or stage_scope_paths(root, args.stage))
+            expected = set(stage_scope_paths(root, args.stage) + args.scope + extra_scope if args.delegated
+                           else (args.scope or stage_scope_paths(root, args.stage)))
             if args.stage in CHECKPOINT_PATHS:
                 expected.add(CHECKPOINT_PATHS[args.stage][0])
+            if args.delegated:
+                expected.add(f".cumcm/delegations/{args.stage}.json")
             recorded = last["scope"]
             if expected != {r["path"] for r in recorded} or any(
                 (target := safe_project_path(root, r["path"])) is None or not target.is_file()
@@ -286,7 +316,7 @@ def _record_decision(args, root: Path, parser: argparse.ArgumentParser, log_path
     checkpoint_data = None
     checkpoint_path = None
     checkpoint_before = None
-    if args.confirm_human:
+    if args.confirm_human or args.delegated:
         if args.decision != "accepted" or args.stage not in checkpoint_paths:
             parser.error("--confirm-human applies only to acceptance at the three human checkpoints")
         rel, key = checkpoint_paths[args.stage]
@@ -309,12 +339,12 @@ def _record_decision(args, root: Path, parser: argparse.ArgumentParser, log_path
         if args.reviewer == "agent":
             args.reviewer = "user"
         data[key] = {"decision": "accepted", "reviewer": args.reviewer,
-                     "reviewer_kind": "human_user", "reviewed_at": datetime.now(timezone.utc).isoformat(),
+                     "reviewer_kind": "lead_agent" if args.delegated else "human_user", "reviewed_at": datetime.now(timezone.utc).isoformat(),
                      presented_key: presented, "notes": args.user_visible_summary}
         checkpoint_data = data
     if args.decision == "accepted" and args.stage in checkpoint_paths:
         from workflow_checks import check_selection_check, check_conclusion_check, check_final_check, require_human_checkpoint
-        if not args.confirm_human:
+        if not (args.confirm_human or args.delegated):
             try:
                 require_human_checkpoint(root, args.stage)
             except ValueError as exc:
@@ -334,10 +364,12 @@ def _record_decision(args, root: Path, parser: argparse.ArgumentParser, log_path
         if errors:
             parser.error(errors[0].message + "; show the material, then use --confirm-human after the user's reply")
 
-    scope_paths = args.scope or stage_scope_paths(root, args.stage)
+    scope_paths = list(dict.fromkeys(stage_scope_paths(root, args.stage) + args.scope + extra_scope)) if args.delegated else (args.scope or stage_scope_paths(root, args.stage))
     if args.decision == "accepted" and args.stage in checkpoint_paths:
         rel, _ = checkpoint_paths[args.stage]
         scope_paths = list(dict.fromkeys([*scope_paths, rel]))
+    if args.delegated:
+        scope_paths = list(dict.fromkeys([*scope_paths, f".cumcm/delegations/{args.stage}.json"]))
     if ".cumcm/state.json" in scope_paths:
         parser.error("workflow state is mutable and must not be included in a decision scope")
     scope = []
@@ -356,6 +388,7 @@ def _record_decision(args, root: Path, parser: argparse.ArgumentParser, log_path
         "decision_id": args.decision_id,
         "stage": args.stage,
         "decision": args.decision,
+        "delegated": args.delegated,
         "scope": scope,
         "reviewer": args.reviewer,
         "task_turn_ref": args.task_turn_ref,
@@ -364,7 +397,7 @@ def _record_decision(args, root: Path, parser: argparse.ArgumentParser, log_path
     }
     if checkpoint_scope is not None:
         checkpoint_scope["sha256"] = hashlib.sha256(json_bytes(checkpoint_data)).hexdigest()
-    pending = {"event": event, "default_scope": not args.scope,
+    pending = {"event": event, "default_scope": not args.scope, "delegated": args.delegated,
                "checkpoint": checkpoint_data, "checkpoint_before": checkpoint_before}
     write_json_atomic(root / ".cumcm/pending-decision.json", pending)
     finish_pending(root, pending)
