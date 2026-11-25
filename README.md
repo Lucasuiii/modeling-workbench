@@ -356,7 +356,7 @@ python3 $S/cumcm_check.py --project <p> --stage model-design --gate-mode preflig
 **⑤ 选定并正式运行**：把胜者置 `selected` 并写理由，然后
 
 ```bash
-python3 $S/record_run.py --project <p> --official \
+python3 $S/record_run.py --project <p> --run-id RUN-Q1-001 --official \
   --capability CAP-Q1-001 --source code/solve.py \
   --input data/q1.csv:formal --output results/q1.json:claim \
   --assert-file results/assertions.json -- python3 code/solve.py
@@ -371,7 +371,7 @@ python3 $S/index_result.py --project <p> --result-id RES-Q1-001 --run RUN-Q1-001
 **⑥ 改了代码？** 追加一次继任运行，父运行原封不动留下：
 
 ```bash
-python3 $S/record_run.py --project <p> --rerun RUN-Q1-001 --official   # 产出 RUN-Q1-002
+python3 $S/record_run.py --project <p> --rerun RUN-Q1-001 --official --assert-file results/assertions.json   # 产出 RUN-Q1-002
 python3 $S/index_result.py --project <p> --follow-lineage
 ```
 
@@ -546,6 +546,8 @@ python3 -m pip install -r requirements-ci.txt
 python3 -m unittest discover -s tests -p 'test_*.py' -v
 python3 -m compileall -q .agents/skills/cumcm-workflow/scripts tests
 ```
+
+[三题建模质量对照评测](examples/workflow-evaluation/README.md)提供题目、分阶段输入和盲评标准。
 
 CI 分三路运行测试：Ubuntu＋Python 3.10、Ubuntu＋Python 3.13＋TeX Live/Poppler，以及原生 Windows＋Python 3.13。三路都调用完整 unittest；缺少外部工具的用例按条件跳过，Linux LaTeX 作业负责**真实 XeLaTeX 编译**。Windows 作业另运行 compileall 和 JSON Schema 校验。实际通过状态以 [Actions](https://github.com/Lucasuiii/modeling-workbench/actions) 为准。共用 fixture 位于 `tests/workflow_fixtures.py` 与 `tests/recorder_fixtures.py`，回归用例仍全部保留。
 

@@ -235,7 +235,7 @@ python3 $S/record_run.py --project <p> -- python3 code/try.py
 python3 $S/record_run.py --project <p> --candidate CAND-A -- python3 code/try_a.py
 
 # freezing costs only the declarations the tool cannot infer
-python3 $S/record_run.py --project <p> --official --capability CAP-Q1-001 \
+python3 $S/record_run.py --project <p> --run-id RUN-Q1-001 --official --capability CAP-Q1-001 \
   --source code/solve.py --input data/q1.csv:formal \
   --output results/q1.json:claim --assert-file results/assertions.json -- python3 code/solve.py
 
@@ -245,7 +245,7 @@ python3 $S/index_result.py --project <p> --result-id RES-Q1-001 --run RUN-Q1-001
   --scope "declared candidates only"
 
 # a rerun appends a successor; the parent and its evidence are untouched
-python3 $S/record_run.py --project <p> --rerun RUN-Q1-001 --official
+python3 $S/record_run.py --project <p> --rerun RUN-Q1-001 --official --assert-file results/assertions.json
 python3 $S/index_result.py --project <p> --follow-lineage
 ```
 
@@ -363,6 +363,8 @@ python3 -m pip install -r requirements-ci.txt
 python3 -m unittest discover -s tests -p 'test_*.py' -v
 python3 -m compileall -q .agents/skills/cumcm-workflow/scripts tests
 ```
+
+[Paired modeling evaluation](examples/workflow-evaluation/README.md) contains three synthetic problems, staged inputs and a blind scoring rubric (Chinese).
 
 CI invokes the full unittest suite in three environments: Ubuntu/Python 3.10, Ubuntu/Python 3.13 with TeX Live/Poppler, and native Windows/Python 3.13. Tool-dependent tests skip when their tools are absent; the Linux LaTeX job exercises real XeLaTeX compilation. The Windows job also runs compileall and JSON Schema validation. Check [Actions](https://github.com/Lucasuiii/modeling-workbench/actions) for actual pass/fail status. Shared fixtures live in `tests/workflow_fixtures.py` and `tests/recorder_fixtures.py`; all regression cases are retained. Tool-dependent tests skip locally when their tools are absent.
 

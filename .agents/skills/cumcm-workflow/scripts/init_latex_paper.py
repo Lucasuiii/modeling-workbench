@@ -10,11 +10,11 @@ import re
 import shutil
 import subprocess
 import tempfile
-import unicodedata
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from competition import is_huawei_competition
 from official_materials import classified_official_materials
 
 
@@ -164,17 +164,6 @@ def commit_staged_tree(staging: Path, paper_dir: Path) -> None:
             elif destination.exists():
                 destination.unlink()
         raise
-
-
-def is_huawei_competition(competition: str) -> bool:
-    name = unicodedata.normalize("NFKC", competition).casefold()
-    compact = re.sub(r"\s+", "", name)
-    return (
-        "华为杯" in compact
-        or "研究生数学建模竞赛" in compact
-        or bool(re.search(r"(?<![a-z0-9])(?:huawei[\s-]+cup|gmcm|cpgmcm|cpmcm)(?![a-z0-9])", name))
-        or "china postgraduate mathematical contest in modeling" in " ".join(name.split())
-    )
 
 
 def initialize(

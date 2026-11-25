@@ -68,6 +68,8 @@ validation     独立复核看到的是这条完整链，而不是一个凭空�
 
 supersession 由 `parent_run_id` 链推导，不回写旧 manifest：回写会改变其哈希，令所有绑定它的 accepted decision 失效。
 
+计算检查、结果索引和返工计划共用正式运行的成功条件及父子关系。数值结论标为 `reproduced` 时，验证器会从两个运行各自冻结的输出读值，按声明的容差比较。新执行的隔离程度和容差的数学意义由复核者判断。见[复现比较](../.agents/skills/cumcm-workflow/references/05-validation.md#reproduced-claims)。
+
 ## 机器事实的边界
 
 这是 v0.6 最重要的架构约束：

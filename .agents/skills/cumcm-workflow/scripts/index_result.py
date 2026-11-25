@@ -16,6 +16,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from canonical_evidence import current_descendant, official_successors, successful_official
+
 WORKFLOW_VERSION = "0.6.0"
 EVIDENCE_STATES = (
     "not_checked", "missing_evidence", "supported_not_reproduced", "reproduced",
@@ -55,39 +57,9 @@ def all_runs(root: Path) -> dict[str, dict[str, Any]]:
     return runs
 
 
-def successful_official(manifest: dict[str, Any]) -> bool:
-    return manifest.get("official_run") is True and manifest.get("status") == "completed" and manifest.get("exit_code") == 0
-
-
-def newest_descendant(runs: dict[str, dict[str, Any]], run_id: str) -> str:
-    """Walk parent links forward through successful official runs only.
-
-    A failed or exploratory rerun replaces nothing. Multiple successful official
-    children are ambiguous; the caller must choose a branch explicitly.
-    """
-    children: dict[str, list[str]] = {}
-    for rid, manifest in runs.items():
-        parent = str(manifest.get("parent_run_id", "")).strip()
-        if parent and parent != rid and successful_official(manifest):
-            children.setdefault(parent, []).append(rid)
-    seen = {run_id}
-    current = run_id
-    while current in children:
-        candidates = sorted(children[current], key=lambda rid: (str(runs[rid].get("finished_at", "")), rid))
-        if len(candidates) > 1:
-            # Two successful official reruns of the same parent is a fork, not a chain.
-            # Both superseded it, and which one the result should follow is a judgement
-            # about the work; guessing "newest" would quietly re-point evidence at a
-            # branch nobody chose.
-            raise ValueError(
-                f"lineage from {current} is ambiguous: {', '.join(candidates)} all supersede it; "
-                "name the run you mean with --run-id instead of --follow-lineage"
-            )
-        current = candidates[0]
-        if current in seen:
-            break
-        seen.add(current)
-    return current
+def newest_descendant(runs: dict[str, dict], run_id: str) -> str:
+    manifests = (dict(run, run_id=rid) for rid, run in runs.items())
+    return current_descendant(official_successors(manifests), run_id)
 
 
 def frozen_locator(manifest: dict[str, Any], run_id: str, locator: str) -> str:
@@ -176,10 +148,14 @@ def main() -> int:
         results = remaining
     elif args.follow_lineage:
         runs = all_runs(root)
+        successors = official_successors(runs.values())
         moved = 0
         for item in results:
             current = str(item.get("run_id", ""))
-            newest = newest_descendant(runs, current)
+            try:
+                newest = current_descendant(successors, current)
+            except ValueError as exc:
+                parser.error(str(exc))
             if newest == current:
                 current_value(root, item)
                 continue
@@ -209,7 +185,7 @@ def main() -> int:
         if "#" not in args.locator:
             parser.error("--locator must be path#/json-pointer")
         manifest = find_run(root, args.run)
-        if manifest.get("official_run") is not True or manifest.get("exit_code") != 0 or manifest.get("status") != "completed":
+        if not successful_official(manifest):
             parser.error(f"{args.run} is not a successful official run; re-record it with record_run.py --official")
         roles = {str(entry.get("path")): entry.get("evidence_role") for entry in manifest.get("outputs", []) if isinstance(entry, dict)}
         probe = frozen_locator(manifest, args.run, args.locator).partition("#")[0]

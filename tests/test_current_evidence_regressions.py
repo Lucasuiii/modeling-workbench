@@ -28,6 +28,51 @@ class CurrentEvidenceTests(unittest.TestCase):
         self.index = self.root / 'results/RESULTS_INDEX.json'
         self.delivery = {'deliverables': {'computation_source': {'archive': 'delivery/source.zip', 'entrypoint': 'code/solve.py'}}}
 
+    def test_only_second_question_source_changed(self):
+        from provenance import tree_snapshot
+        q2 = 'RUN-Q2-001'
+        code = self.root / 'code/q2.py'
+        code.write_text('print(2)', encoding='utf-8')
+        directory = self.root / 'runs' / q2
+        frozen = directory / 'source/code/q2.py'
+        frozen.parent.mkdir(parents=True)
+        shutil.copyfile(code, frozen)
+        rel = frozen.relative_to(self.root).as_posix()
+        output = directory / 'outputs/q2.json'
+        output.parent.mkdir()
+        output.write_text('{"answer": 2}', encoding='utf-8')
+        output_rel = output.relative_to(self.root).as_posix()
+        write_json(self.root, f'runs/{q2}/RUN_MANIFEST.json', {
+            'run_id': q2, 'status': 'completed', 'official_run': True, 'exit_code': 0,
+            'implementation': {'source_snapshot': tree_snapshot(self.root, [rel])},
+            'outputs': [{'path': output_rel, 'sha256': sha256_file(output), 'evidence_role': 'claim_bearing_output'}]})
+        index = json.loads(self.index.read_bytes())
+        index['results'].append({'result_id': 'RES-Q2', 'run_id': q2, 'value': 2, 'output_locator': output_rel + '#/answer'})
+        write_json(self.root, 'results/RESULTS_INDEX.json', index)
+        claims = json.loads((self.root / 'validation/CLAIM_LEDGER.json').read_bytes())
+        claims['claims'].append({'claim_id': 'CLM-Q2', 'evidence': {'result_ids': ['RES-Q2']}})
+        write_json(self.root, 'validation/CLAIM_LEDGER.json', claims)
+        write_json(self.root, 'paper/PAPER_PLAN.json', {'paper_structure': [
+            {'section_id': 'S1', 'claim_ids': ['CLM-Q1-001']}, {'section_id': 'S2', 'claim_ids': ['CLM-Q2']}]})
+        write_json(self.root, 'paper/LATEX_TEMPLATE_MANIFEST.json', {'section_files': ['q1.tex', 'q2.tex'],
+            'section_paths': [{'section_id': 'S1', 'path': 'q1.tex'}, {'section_id': 'S2', 'path': 'q2.tex'}]})
+        self.assertEqual(len(resolve_official_computation(self.root)), 2)
+        code.write_text('print(3)', encoding='utf-8')
+        plan = build_plan(self.root, ['code/q2.py'])
+        self.assertEqual(plan['stale_official_runs'], [q2])
+        self.assertEqual(plan['stale_results'], ['RES-Q2'])
+        self.assertEqual(plan['stale_claims'], ['CLM-Q2'])
+        self.assertEqual(plan['stale_sections'], ['q2.tex'])
+        self.assertEqual(plan['unaffected']['paper'], ['q1.tex'])
+        self.assertEqual(len(resolve_official_computation(self.root, {'results': index['results'][:1]})), 1)
+        with self.assertRaisesRegex(ValueError, q2):
+            resolve_official_computation(self.root)
+
+    def test_failed_run_with_formal_flag_does_not_enter_redo_plan(self):
+        failed = dict(self.run, run_id='FAILED', parent_run_id=self.run['run_id'], exit_code=1, status='failed')
+        write_json(self.root, 'runs/FAILED/RUN_MANIFEST.json', failed)
+        self.assertEqual(build_plan(self.root, ['code/solve.py'])['stale_official_runs'], [self.run['run_id']])
+
     def team_input(self):
         live = self.root / 'data/cleaned.csv'; live.parent.mkdir(); live.write_text('x\n1\n', encoding="utf-8")
         frozen = self.root / 'runs/RUN-Q1-001/inputs/data/cleaned.csv'; frozen.parent.mkdir(parents=True); shutil.copyfile(live, frozen)

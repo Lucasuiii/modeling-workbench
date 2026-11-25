@@ -51,6 +51,8 @@ python3 "$S/record_decision.py" --project <p> --stage <stage> \
   --summary <what-the-user-accepted>
 ```
 
+If a decision write was interrupted, run `record_decision.py --project <p> --recover` before dependent work. Recovery checks the original material and reply. If a binding changed, reopen the named stage and present the revision.
+
 No manual timestamps, presented-ID lists, hashes or state edits. Other stages are technical completions: use the same command **without** `--confirm-human`, after their checks pass, referencing the current task. They do not require another user confirmation. Reopen with `--decision revision_requested`; downstream approvals become unusable. Decisions are honest conversation records, not cryptographic proof that a person answered.
 
 ## Working and finalizing

@@ -87,7 +87,7 @@ def diagnose(timeout: float = 10, modules: tuple[str, ...] = (), probe_matlab: b
         add("matlab", status, detail, "optional MATLAB backend")
     else:
         add("matlab", "unverified", f"{matlab}; not launched; license/toolboxes untested", "optional MATLAB backend")
-    for name, args in (("xelatex", ["--version"]), ("pdftoppm", ["-v"]), ("pdfinfo", ["-v"])):
+    for name, args in (("xelatex", ["--version"]), ("pdftoppm", ["-v"]), ("pdfinfo", ["-v"]), ("pdftotext", ["-v"])):
         executable = shutil.which(name)
         status, detail = probe([executable, *args], timeout) if executable else ("missing", f"{name} not found on PATH")
         add(name, status, detail.splitlines()[0] if detail else detail, "paper/delivery")

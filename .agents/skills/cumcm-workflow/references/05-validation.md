@@ -35,3 +35,16 @@ Create `CLAIM_LEDGER.json` from the reviewed evidence. Each paper-bearing claim 
 Before paper writing, build `validation-paper`. For a targeted result, the builder follows only the structured `previous_review_path` lineage and applies the latest status per finding ID: open/accepted P1 concerns remain, while resolved findings drop out. Its limitations come from supported paper-eligible claim limitations, those current P1 concerns, and explicit model applicability, assumptions, and known limitations—not contradicted/unsupported claims or model `scope`. Its `representation_candidates` proactively identify trend, multi-group comparison, distribution, sensitivity, model-performance, and spatial/network/clustering evidence. A fresh paper task reads this compact handoff first, chooses prose/equation/table/figure, and does not scan full run/debug history.
 
 After the explicit reply, use `record_decision.py --stage validation --decision accepted --confirm-human` with the reply reference and summary (see SKILL.md). It records the existing fields and advances state; paper handoff and initialization reject missing or stale human acceptance.
+
+
+## Reproduced claims
+
+For a scalar result, first declare the comparison quantity, unit, scope and absolute tolerance. Record an independent execution under a new run ID; reserve `--rerun` for replacing an obsolete run. Index each value from its own frozen output. Cite both result IDs and run IDs in the claim. For example:
+
+```json
+{"reproduction": {"comparisons": [
+  {"result_id": "RES-Q1-001", "comparison_result_id": "RES-Q1-002", "absolute_tolerance": 0.00001}
+]}}
+```
+
+The checker reads both values, checks that both runs are current, and compares the absolute difference. Each result cited by a reproduced claim must participate. The reviewer still assesses execution isolation, comparable inputs, the mathematical meaning of the quantity, and whether the chosen tolerance is appropriate. The default tolerance is zero. Categorical and structured outputs use exact JSON comparison. For approximate vector outputs, index the scalar quantities the conclusion actually asserts. Use `supported_not_reproduced` for conclusions supported by a proof or review alone.

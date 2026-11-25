@@ -102,6 +102,25 @@
           "evidence_state": {
             "$ref": "common.schema.json#/$defs/evidence_state"
           },
+          "reproduction": {
+            "type": "object",
+            "required": ["comparisons"],
+            "properties": {
+              "comparisons": {
+                "type": "array", "minItems": 1,
+                "items": {
+                  "type": "object",
+                  "required": ["result_id", "comparison_result_id"],
+                  "properties": {
+                    "result_id": {"type": "string", "minLength": 1},
+                    "comparison_result_id": {"type": "string", "minLength": 1},
+                    "absolute_tolerance": {"type": "number", "minimum": 0}
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
           "certificates": {
             "type": "array",
             "items": {

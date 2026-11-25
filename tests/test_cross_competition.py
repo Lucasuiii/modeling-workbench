@@ -67,6 +67,13 @@ class CrossCompetitionTests(unittest.TestCase):
         for name in ("CUMCM", "MCM/ICM", "MathorCup", "Huawei programming contest", "notgmcm", "GMCMx"):
             with self.subTest(name=name):
                 self.assertFalse(is_huawei_competition(name))
+        from submission_check import check_submission
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            for name, required in (("China Postgraduate Mathematical Contest in Modeling", True),
+                                   ("ＧＭＣＭ", True), ("Huawei programming contest", False)):
+                write_json(root, "paper/LATEX_TEMPLATE_MANIFEST.json", {"competition": name})
+                self.assertEqual(bool(check_submission(root, {})), required, name)
         for language, template, expected in (("zh", "auto", "huawei-ctex"),
                                               ("zh", "generic", "cumcm-contest-ctex"),
                                               ("en", "auto", "modeling-contest-article")):

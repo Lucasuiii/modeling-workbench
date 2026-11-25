@@ -8,6 +8,7 @@ that iteration never requires hand-editing .cumcm/state.json."""
 from __future__ import annotations
 
 import argparse
+import hashlib
 import errno
 import json
 import os
@@ -40,12 +41,24 @@ def load_events(path: Path) -> list[dict]:
     return events
 
 
-def write_json_atomic(path: Path, payload: dict) -> None:
+def json_bytes(payload: dict) -> bytes:
+    return (json.dumps(payload, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
+
+
+def write_atomic(path: Path, content: bytes) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.NamedTemporaryFile("wb", dir=path.parent, delete=False) as stream:
-        stream.write((json.dumps(payload, ensure_ascii=False, indent=2) + "\n").encode("utf-8"))
-        temp_name = stream.name
-    os.replace(temp_name, path)
+    stream = tempfile.NamedTemporaryFile("wb", dir=path.parent, delete=False)
+    temporary = Path(stream.name)
+    try:
+        with stream:
+            stream.write(content)
+        os.replace(temporary, path)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
+def write_json_atomic(path: Path, payload: dict) -> None:
+    write_atomic(path, json_bytes(payload))
 
 
 CHECKPOINT_PATHS = {"model-design": ("model/MODEL_CONTRACT.json", "selection_check"),
@@ -108,7 +121,7 @@ def reopen(root: Path, stage: str) -> None:
     state = json.loads(state_path.read_text(encoding="utf-8"))
     stages = state.get("stages")
     if not isinstance(stages, dict):
-        return
+        raise ValueError("cannot reopen stage: invalid workflow state")
     stages[stage] = "needs_revision"
     for later in STAGES[index + 1 :]:
         if stages.get(later) == "passed":
@@ -117,18 +130,84 @@ def reopen(root: Path, stage: str) -> None:
     write_json_atomic(state_path, state)
 
 
+def finish_pending(root: Path, pending: dict) -> None:
+    """Replay under the decision lock. Keep the intent until every write completes."""
+    event = pending["event"]
+    stage = event["stage"]
+    log_path = root / ".cumcm/decisions.jsonl"
+    events = load_events(log_path)
+    previous = next((e for e in events if e["decision_id"] == event["decision_id"]), None)
+    if previous is not None and previous != event:
+        raise ValueError(f"decision ID conflict: {event['decision_id']}")
+    if event["decision"] == "accepted":
+        checkpoint = pending.get("checkpoint")
+        checkpoint_rel = CHECKPOINT_PATHS[stage][0] if checkpoint is not None else None
+        if pending.get("default_scope"):
+            actual = set(stage_scope_paths(root, stage))
+            if actual != {entry["path"] for entry in event["scope"]}:
+                changed = sorted(actual.symmetric_difference(entry["path"] for entry in event["scope"]))
+                raise ValueError(f"{stage} material list changed: {', '.join(changed)}; record revision_requested for {stage}")
+        # A previous attempt may have already written the prepared checkpoint.
+        # Validate every binding before touching anything, including an edited checkpoint.
+        for entry in event["scope"]:
+            target = safe_project_path(root, entry["path"])
+            allowed = {entry["sha256"]}
+            if entry["path"] == checkpoint_rel:
+                allowed.add(pending["checkpoint_before"])
+            if target is None or not target.is_file() or sha256(target) not in allowed:
+                raise ValueError(f"{stage} approval material changed: {entry['path']}; "
+                                 f"record revision_requested for {stage}, then present the new material")
+        if checkpoint_rel is not None:
+            write_json_atomic(root / checkpoint_rel, checkpoint)
+    if previous is None:
+        # Preserve historical bytes (including Windows newlines). Replacing the
+        # small log atomically prevents a truncated final JSON line on interruption.
+        history = log_path.read_bytes() if log_path.exists() else b""
+        if history and not history.endswith(b"\n"):
+            history += b"\n"
+        line = json.dumps(event, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+        write_atomic(log_path, history + line.encode("utf-8") + b"\n")
+    if event["decision"] == "accepted":
+        state_path = root / ".cumcm/state.json"
+        state = json.loads(state_path.read_bytes())
+        snapshot = {
+            "snapshot_version": "0.6.0", "project_id": state["project_id"], "stage": stage,
+            "decision_id": event["decision_id"], "decision": "accepted", "created_at": event["decided_at"],
+            "artifacts": event["scope"], "snapshot_digest": digest_records(event["scope"]),
+        }
+        write_json_atomic(root / ".cumcm/snapshots" / f"{stage}.json", snapshot)
+        state["stages"][stage] = "passed"
+        next_stage = next((s for s in STAGES if state["stages"].get(s) != "passed"), STAGES[-1])
+        if state["stages"].get(next_stage) == "not_started":
+            state["stages"][next_stage] = "in_progress"
+        state["current_stage"] = next_stage
+        write_json_atomic(state_path, state)
+    else:
+        reopen(root, stage)
+    (root / ".cumcm/pending-decision.json").unlink()
+    print(f"recorded {event['decision_id']} for {stage}: {event['decision']}")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Record an append-only, artifact-bound workflow decision")
     parser.add_argument("--project", required=True, type=Path)
-    parser.add_argument("--stage", required=True, choices=STAGES)
-    parser.add_argument("--decision", required=True, choices=("accepted", "revision_requested"))
+    parser.add_argument("--recover", action="store_true", help="finish an interrupted decision using its original scope and reply")
+    parser.add_argument("--stage", choices=STAGES)
+    parser.add_argument("--decision", choices=("accepted", "revision_requested"))
     parser.add_argument("--decision-id", help="optional; otherwise allocated from the existing decision log")
     parser.add_argument("--reviewer", default="agent")
-    parser.add_argument("--task-turn-ref", required=True)
-    parser.add_argument("--summary", required=True, dest="user_visible_summary")
+    parser.add_argument("--task-turn-ref")
+    parser.add_argument("--summary", dest="user_visible_summary")
     parser.add_argument("--confirm-human", action="store_true", help="only after the user explicitly accepted ALL currently presented material; fills the existing checkpoint fields")
     parser.add_argument("--scope", action="append", default=[], help="project-relative file; repeat to override the stage defaults")
     args = parser.parse_args()
+
+    if args.recover:
+        if any((args.stage, args.decision, args.task_turn_ref, args.user_visible_summary, args.confirm_human,
+                args.scope, args.decision_id, args.reviewer != "agent")):
+            parser.error("--recover takes only --project")
+    elif not all((args.stage, args.decision, args.task_turn_ref, args.user_visible_summary)):
+        parser.error("supply --stage, --decision, --task-turn-ref and --summary, or --recover")
 
     root = args.project.resolve()
     if not root.is_dir():
@@ -138,11 +217,60 @@ def main() -> int:
     # Include allocation and checkpoint validation in the same transaction as
     # the append-only log, snapshot, and state writes.
     with decision_lock(root / ".cumcm" / "decisions.lock"):
-        return _record_decision(args, root, parser, log_path)
+        pending_path = root / ".cumcm/pending-decision.json"
+        try:
+            if pending_path.is_file():
+                pending = json.loads(pending_path.read_bytes())
+                event = pending["event"]
+                if args.recover:
+                    finish_pending(root, pending)
+                    return 0
+                # An explicit revision can retire an interrupted approval after material changed.
+                if not (args.decision == "revision_requested" and args.stage == event["stage"]
+                        and event["decision"] == "accepted"):
+                    parser.error("interrupted decision pending; rerun with --recover")
+            elif args.recover:
+                print("no interrupted decision")
+                return 0
+            return _record_decision(args, root, parser, log_path)
+        except (OSError, ValueError, KeyError, TypeError) as exc:
+            parser.error(str(exc))
 
 
 def _record_decision(args, root: Path, parser: argparse.ArgumentParser, log_path: Path) -> int:
+    if args.scope:
+        scope = []
+        for rel in args.scope:
+            target = safe_project_path(root, rel)
+            if target is None or not target.is_file():
+                parser.error(f"scope file is missing or unsafe: {rel}")
+            scope.append(target.relative_to(root).as_posix())
+        args.scope = list(dict.fromkeys(scope))
     events = load_events(log_path)
+    # A crash after removing the intent can hide the success message from the caller.
+    # Recognize the identical reply, but never bind it to newly edited material.
+    last = events[-1] if events else {}
+    reviewer = "user" if args.confirm_human and args.reviewer == "agent" else args.reviewer
+    if (last and args.decision_id in (None, last["decision_id"])
+            and (last.get("stage"), last.get("decision"), last.get("reviewer"), last.get("task_turn_ref"),
+                 last.get("user_visible_summary")) ==
+                (args.stage, args.decision, reviewer, args.task_turn_ref, args.user_visible_summary)
+            and not (root / ".cumcm/pending-decision.json").exists()):
+        if args.decision == "accepted":
+            expected = set(args.scope or stage_scope_paths(root, args.stage))
+            if args.stage in CHECKPOINT_PATHS:
+                expected.add(CHECKPOINT_PATHS[args.stage][0])
+            recorded = last["scope"]
+            if expected != {r["path"] for r in recorded} or any(
+                (target := safe_project_path(root, r["path"])) is None or not target.is_file()
+                or sha256(target) != r["sha256"] for r in recorded
+            ):
+                parser.error("approval material or scope changed; present it and record a new reply")
+            snapshot = root / ".cumcm/snapshots" / f"{args.stage}.json"
+            if not snapshot.is_file() or json.loads(snapshot.read_bytes()).get("decision_id") != last["decision_id"]:
+                parser.error("approval snapshot changed; review the current material")
+        print(f"already recorded {last['decision_id']} for {args.stage}")
+        return 0
     if not args.decision_id:
         used = {event["decision_id"] for event in events}
         number = len(events) + 1
@@ -156,12 +284,15 @@ def _record_decision(args, root: Path, parser: argparse.ArgumentParser, log_path
     checkpoint_paths = CHECKPOINT_PATHS
     checkpoint_data = None
     checkpoint_path = None
+    checkpoint_before = None
     if args.confirm_human:
         if args.decision != "accepted" or args.stage not in checkpoint_paths:
             parser.error("--confirm-human applies only to acceptance at the three human checkpoints")
         rel, key = checkpoint_paths[args.stage]
         checkpoint_path = root / rel
-        data = json.loads(checkpoint_path.read_bytes())
+        original = checkpoint_path.read_bytes()
+        checkpoint_before = hashlib.sha256(original).hexdigest()
+        data = json.loads(original)
         if args.stage == "model-design":
             presented_key = "presented_candidate_ids"
             presented = [c["candidate_id"] for component in data.get("components", [])
@@ -230,40 +361,12 @@ def _record_decision(args, root: Path, parser: argparse.ArgumentParser, log_path
         "user_visible_summary": args.user_visible_summary,
         "decided_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
     }
-    if checkpoint_data is not None:
-        write_json_atomic(checkpoint_path, checkpoint_data)
-        if checkpoint_scope is not None:
-            checkpoint_scope["sha256"] = sha256(checkpoint_path)
-    with log_path.open("a", encoding="utf-8") as stream:
-        stream.write(json.dumps(event, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n")
-    snapshot_path = root / ".cumcm" / "snapshots" / f"{args.stage}.json"
-    if args.decision == "accepted":
-        snapshot = {
-            "snapshot_version": "0.6.0",
-            "project_id": json.loads((root / ".cumcm" / "state.json").read_text(encoding="utf-8")).get("project_id"),
-            "stage": args.stage,
-            "decision_id": args.decision_id,
-            "decision": args.decision,
-            "created_at": event["decided_at"],
-            "artifacts": scope,
-            "snapshot_digest": digest_records(scope),
-        }
-        write_json_atomic(snapshot_path, snapshot)
-        state_path = root / ".cumcm" / "state.json"
-        state = json.loads(state_path.read_text(encoding="utf-8"))
-        state["stages"][args.stage] = "passed"
-        pending = [stage for stage in STAGES if state["stages"].get(stage) != "passed"]
-        next_stage = pending[0] if pending else STAGES[-1]
-        if state["stages"].get(next_stage) == "not_started":
-            state["stages"][next_stage] = "in_progress"
-        state["current_stage"] = next_stage
-        write_json_atomic(state_path, state)
-        print(f"{args.stage}: passed; next: {next_stage}")
-    else:
-        reopen(root, args.stage)
-    print(f"recorded {args.decision_id} for {args.stage}; {len(scope)} artifact(s) bound")
-    if args.decision == "revision_requested":
-        print(f"reopened {args.stage}; downstream stages are now needs_revision")
+    if checkpoint_scope is not None:
+        checkpoint_scope["sha256"] = hashlib.sha256(json_bytes(checkpoint_data)).hexdigest()
+    pending = {"event": event, "default_scope": not args.scope,
+               "checkpoint": checkpoint_data, "checkpoint_before": checkpoint_before}
+    write_json_atomic(root / ".cumcm/pending-decision.json", pending)
+    finish_pending(root, pending)
     return 0
 
 
