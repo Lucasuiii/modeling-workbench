@@ -22,7 +22,7 @@ Review this freshness-bound package without consulting the originating conversat
 1. Read `REVIEW_REQUEST.md` and `materials/problem/SOURCE_MANIFEST.json`. In targeted mode, also read package-root `TARGETED_FINDINGS.json`; it is the self-contained prior-P0 brief, so do not request the complete prior review.
 2. Reconstruct each subproblem from the supplied official files and `PROBLEM_FACTS.json`.
 3. Compare the official request with the model objective, variables, constraints, assumptions, and cross-question dependencies.
-4. Inspect computation entry points, run manifests, executed outputs, and result locators.
+4. Inspect computation entry points, run manifests, executed outputs, and result locators. For a claim-bearing output, `preexisting` reports whether the path existed before the recorder moved the old file into `previous_outputs/`. The generation check refers to the path after that move and before the solver starts.
 5. Challenge relevant failure classes:
    - task or target misunderstood;
    - upper/lower bound or optimization direction reversed;

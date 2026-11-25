@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any, Iterable
 
 from canonical_evidence import official_successors, successful_official
+import evidence_json
 from json_pointer import resolve_json_pointer
 
 from jsonschema import Draft202012Validator
@@ -218,10 +219,12 @@ def safe_project_path(root: Path, rel: Any) -> Path | None:
     return candidate
 
 
-def read_json(path: Path) -> tuple[Any | None, str | None]:
+def read_json(path: Path, *, exact: bool = False) -> tuple[Any | None, str | None]:
     try:
+        if exact:
+            return evidence_json.read(path), None
         return json.loads(path.read_text(encoding="utf-8")), None
-    except (OSError, json.JSONDecodeError) as exc:
+    except (OSError, ValueError) as exc:
         return None, str(exc)
 
 
@@ -1147,14 +1150,14 @@ def check_results(
         if output_path is None or not output_path.is_file():
             findings.append(finding("RESULT-E009", "error", "execution", "computation", path, f"{ident} output file is missing: {rel}", related_ids=[ident]))
             continue
-        output_data, error = read_json(output_path)
+        output_data, error = read_json(output_path, exact=True)
         if error:
             findings.append(finding("RESULT-E010", "error", "execution", "computation", path, f"{ident} output is not readable JSON: {error}", related_ids=[ident]))
             continue
         stored_value, found = resolve_json_pointer(output_data, pointer)
         if not found:
             findings.append(finding("RESULT-E011", "error", "execution", "computation", path, f"{ident} JSON pointer does not resolve: {pointer}", related_ids=[ident]))
-        elif "value" in result and result.get("value") != stored_value:
+        elif "value" in result and not evidence_json.equal(result["value"], stored_value):
             findings.append(finding("RESULT-E012", "error", "numerical", "computation", path, f"{ident} indexed value differs from executed output", related_ids=[ident]))
     return findings
 
@@ -2168,7 +2171,7 @@ def load_contracts(root: Path, required: Iterable[str]) -> tuple[dict[str, Any],
                 )
             )
             continue
-        value, error = read_json(path)
+        value, error = read_json(path, exact=name in {"results", "claims"})
         if error:
             findings.append(
                 finding(
@@ -2288,7 +2291,7 @@ def check_project(
         optional_path = root / CONTRACT_PATHS[name]
         if not optional_path.is_file():
             continue
-        value, error = read_json(optional_path)
+        value, error = read_json(optional_path, exact=name in {"results", "claims"})
         if error:
             findings.append(finding("PROJECT-E002", "error", "structural", owning_stage_for_contract(name), CONTRACT_PATHS[name], f"invalid optional contract: {error}"))
         else:

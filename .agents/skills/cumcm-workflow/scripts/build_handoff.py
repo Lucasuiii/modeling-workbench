@@ -11,6 +11,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+import evidence_json
 from canonical_evidence import resolve_official_computation
 from official_materials import classified_official_materials
 from provenance import digest_records, sha256_file, snapshot_matches
@@ -234,7 +235,7 @@ def paper_limitations(
 def paper_payload(root: Path) -> dict[str, Any]:
     facts = read_object(root, "analysis/PROBLEM_FACTS.json")
     model = read_object(root, "model/MODEL_CONTRACT.json")
-    results = read_object(root, "results/RESULTS_INDEX.json")
+    results = evidence_json.read(root / "results/RESULTS_INDEX.json")
     claims = read_object(root, "validation/CLAIM_LEDGER.json")
     review = read_object(root, "validation/INDEPENDENT_REVIEW_RESULT.json")
     lineage_findings, _ = review_lineage(root, review)
@@ -272,16 +273,14 @@ def build_payload(root: Path, transition: str, state: dict[str, Any]) -> dict[st
     if transition == "modeling-computation":
         return {"implementation": state.get("implementation"), "next_task": "select one backend, implement, execute, and preserve the official run"}
     if transition == "computation-validation":
-        results = read_object(root, "results/RESULTS_INDEX.json")
-        official = resolve_official_computation(root, results)
+        official = resolve_official_computation(root)
         return {"official_run_ids": [item["run_id"] for item in official], "next_task": "review the packaged computation without reading debug history"}
     if transition == "validation-paper":
         return paper_payload(root)
     quality = read_object(root, "paper/PAPER_QUALITY_REPORT.json")
     latex = read_object(root, "paper/LATEX_TEMPLATE_MANIFEST.json")
     receipt = read_object(root, "delivery/COMPILE_RECEIPT.json")
-    results = read_object(root, "results/RESULTS_INDEX.json")
-    computation = resolve_official_computation(root, results)
+    computation = resolve_official_computation(root)
     source_snapshot = receipt.get("source_snapshot")
     if not snapshot_matches(root, source_snapshot):
         raise ValueError("paper-delivery requires a current compile-bound editable LaTeX source snapshot")
@@ -355,8 +354,7 @@ def build(root: Path, transition: str, task_ref: str | None = None) -> Path:
         for source in official_sources(root):
             add_artifact(root, records, str(source.get("path")), "official_input")
     if transition == "computation-validation":
-        results = read_object(root, "results/RESULTS_INDEX.json")
-        for evidence in resolve_official_computation(root, results):
+        for evidence in resolve_official_computation(root):
             add_artifact(root, records, evidence["manifest_path"], "official_run")
             for rel in evidence["source_files"]:
                 add_artifact(root, records, str(rel), "computation_source")
@@ -378,8 +376,7 @@ def build(root: Path, transition: str, task_ref: str | None = None) -> Path:
         quality = read_object(root, "paper/PAPER_QUALITY_REPORT.json")
         if isinstance(quality.get("paper_artifact"), dict):
             add_artifact(root, records, str(quality["paper_artifact"].get("path")), "approved_pdf")
-        results = read_object(root, "results/RESULTS_INDEX.json")
-        for evidence in resolve_official_computation(root, results):
+        for evidence in resolve_official_computation(root):
             add_artifact(root, records, evidence["manifest_path"], "official_run")
             for rel in evidence["source_files"]:
                 add_artifact(root, records, rel, "computation_source")
@@ -404,7 +401,7 @@ def build(root: Path, transition: str, task_ref: str | None = None) -> Path:
     destination = root / "handoffs" / transition / "HANDOFF.json"
     destination.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.NamedTemporaryFile("w", encoding="utf-8", dir=destination.parent, delete=False) as stream:
-        json.dump(handoff, stream, ensure_ascii=False, indent=2)
+        stream.write(evidence_json.dumps(handoff))
         stream.write("\n")
         temp_name = stream.name
     os.replace(temp_name, destination)

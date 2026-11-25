@@ -14,6 +14,7 @@ from fractions import Fraction
 from pathlib import Path
 from typing import Any
 
+import evidence_json
 from json_pointer import resolve_json_pointer
 from provenance import snapshot_matches, sha256_file
 
@@ -98,7 +99,10 @@ def live_evidence_drift(project: Path, run: dict[str, Any]) -> list[str]:
 def resolve_official_computation(project: Path, results: dict[str, Any] | None = None) -> list[dict[str, Any]]:
     """Return referenced successful official runs or fail on any broken formal link."""
     project = project.resolve()
-    results = results or read_object(project / "results" / "RESULTS_INDEX.json")
+    if results is None:
+        results = evidence_json.read(project / "results" / "RESULTS_INDEX.json")
+    if not isinstance(results, dict):
+        raise ValueError("expected JSON object in RESULTS_INDEX.json")
     result_items = results.get("results")
     if not isinstance(result_items, list) or not result_items:
         raise ValueError("RESULTS_INDEX.json must contain at least one formal result")
@@ -183,13 +187,13 @@ def resolve_official_computation(project: Path, results: dict[str, Any] | None =
 
             pointer = locator.split("#", 1)[1]
             try:
-                output = json.loads((project / output_path).read_text(encoding="utf-8"))
+                output = evidence_json.read(project / output_path)
             except (OSError, ValueError) as exc:
                 raise ValueError(f"cannot read formal result output: {output_path}") from exc
             actual_value, found = resolve_json_pointer(output, pointer)
             if not found:
                 raise ValueError(f"formal result JSON pointer does not resolve: {locator}")
-            if "value" in result and result["value"] != actual_value:
+            if "value" in result and not evidence_json.equal(result["value"], actual_value):
                 raise ValueError(f"formal result value differs from frozen output: {locator}")
 
         resolved.append(
@@ -242,7 +246,7 @@ def check_reproduction(project: Path, claim: dict, indexed: dict[str, dict]) -> 
             path = (project / rel).resolve()
             if not path.is_relative_to(project.resolve() / prefix) or not rel.startswith(prefix):
                 raise ValueError("each comparison needs its own frozen output")
-            value, found = resolve_json_pointer(json.loads(path.read_bytes()), pointer)
+            value, found = resolve_json_pointer(evidence_json.read(path), pointer)
             if not found:
                 raise ValueError("comparison output locator does not resolve")
             values.append(value)
@@ -250,17 +254,16 @@ def check_reproduction(project: Path, claim: dict, indexed: dict[str, dict]) -> 
         if files[0].samefile(files[1]):
             raise ValueError("the two runs share the same frozen output file")
         tolerance = comparison.get("absolute_tolerance", 0)
-        if type(tolerance) not in (int, float) or Fraction(str(tolerance)) < 0:
+        if not evidence_json.is_number(tolerance) or tolerance < 0:
             raise ValueError("absolute tolerance must be a finite, nonnegative number")
-        if all(type(v) in (int, float) for v in values):
+        if tolerance:
+            if not all(evidence_json.is_number(v) for v in values):
+                raise ValueError("non-scalar or categorical outputs require exact comparison")
             # Compare serialized decimal values exactly at the tolerance boundary.
             a, b = (Fraction(str(v)) for v in values)
             matches = abs(a - b) <= Fraction(str(tolerance))
         else:
-            if tolerance:
-                raise ValueError("non-scalar or categorical outputs require exact comparison")
-            left, right = (json.dumps(v, sort_keys=True, allow_nan=False) for v in values)
-            matches = left == right
+            matches = evidence_json.equal(*values)
         if not matches:
             raise ValueError(f"reproduction comparison failed for {first['result_id']}")
         covered.update(result_ids)

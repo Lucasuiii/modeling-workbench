@@ -18,6 +18,7 @@ from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 
+import evidence_json
 from workflow_checks import STAGES, safe_project_path, sha256, stage_scope_paths
 from provenance import digest_records
 
@@ -42,7 +43,7 @@ def load_events(path: Path) -> list[dict]:
 
 
 def json_bytes(payload: dict) -> bytes:
-    return (json.dumps(payload, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
+    return (evidence_json.dumps(payload) + "\n").encode("utf-8")
 
 
 def write_atomic(path: Path, content: bytes) -> None:
@@ -113,7 +114,7 @@ def reopen(root: Path, stage: str) -> None:
             rel, key = CHECKPOINT_PATHS[later]
             path = root / rel
             if path.is_file():
-                data = json.loads(path.read_text(encoding="utf-8"))
+                data = evidence_json.read(path)
                 if isinstance(data.get(key), dict):
                     data[key]["decision"] = "unreviewed"
                     write_json_atomic(path, data)
@@ -220,7 +221,7 @@ def main() -> int:
         pending_path = root / ".cumcm/pending-decision.json"
         try:
             if pending_path.is_file():
-                pending = json.loads(pending_path.read_bytes())
+                pending = evidence_json.loads(pending_path.read_bytes())
                 event = pending["event"]
                 if args.recover:
                     finish_pending(root, pending)
@@ -292,7 +293,7 @@ def _record_decision(args, root: Path, parser: argparse.ArgumentParser, log_path
         checkpoint_path = root / rel
         original = checkpoint_path.read_bytes()
         checkpoint_before = hashlib.sha256(original).hexdigest()
-        data = json.loads(original)
+        data = evidence_json.loads(original)
         if args.stage == "model-design":
             presented_key = "presented_candidate_ids"
             presented = [c["candidate_id"] for component in data.get("components", [])
