@@ -9,13 +9,13 @@ The value is never transcribed by hand: it is resolved through the same
 from __future__ import annotations
 
 import argparse
-import json
 import os
 import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+import evidence_json
 from canonical_evidence import current_descendant, official_successors, successful_official
 
 WORKFLOW_VERSION = "0.6.0"
@@ -31,8 +31,8 @@ def utc_now() -> str:
 
 def read_object(path: Path) -> dict[str, Any]:
     try:
-        value = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as exc:
+        value = evidence_json.read(path)
+    except (OSError, ValueError) as exc:
         raise SystemExit(f"cannot read {path}: {exc}")
     if not isinstance(value, dict):
         raise SystemExit(f"expected a JSON object: {path}")
@@ -85,7 +85,7 @@ def find_run(root: Path, run_id: str) -> dict[str, Any]:
 def write_atomic(path: Path, payload: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.NamedTemporaryFile("w", encoding="utf-8", dir=path.parent, delete=False) as stream:
-        json.dump(payload, stream, ensure_ascii=False, indent=2)
+        stream.write(evidence_json.dumps(payload))
         stream.write("\n")
         temp_name = stream.name
     os.replace(temp_name, path)
@@ -98,7 +98,7 @@ def current_value(root: Path, item: dict[str, Any]) -> Any:
         probe = {key: value for key, value in item.items() if key != "value"}
         resolve_official_computation(root, {"results": [probe]})
         rel, pointer = item["output_locator"].split("#", 1)
-        return resolve_pointer(json.loads((root / rel).read_text(encoding="utf-8")), pointer)
+        return resolve_pointer(evidence_json.read(root / rel), pointer)
     except (OSError, ValueError, KeyError) as exc:
         raise SystemExit(str(exc)) from exc
 
@@ -157,7 +157,9 @@ def main() -> int:
             except ValueError as exc:
                 parser.error(str(exc))
             if newest == current:
-                current_value(root, item)
+                actual = current_value(root, item)
+                if "value" not in item or not evidence_json.equal(actual, item["value"]):
+                    parser.error(f"{item['result_id']} differs from frozen output; use --refresh")
                 continue
             manifest = runs[newest]
             locator = str(item.get("output_locator", ""))

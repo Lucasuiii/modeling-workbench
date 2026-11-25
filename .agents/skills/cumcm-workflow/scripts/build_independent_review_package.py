@@ -113,7 +113,6 @@ def build(project: Path, *, review_mode: str = "auto", previous_review_path: str
         raise ValueError("workflow state has no project_id")
 
     sources = require_object(project / "problem/SOURCE_MANIFEST.json")
-    results = require_object(project / "results/RESULTS_INDEX.json")
     records: list[dict[str, Any]] = []
     seen: set[str] = set()
     validation_dir = project / "validation"
@@ -165,7 +164,7 @@ def build(project: Path, *, review_mode: str = "auto", previous_review_path: str
             if isinstance(source, dict) and source.get("origin") in {"official", "organizer_attachment"}:
                 copy_material(project, staging, str(source.get("path")), "official_input", records, seen)
 
-        for evidence in resolve_official_computation(project, results):
+        for evidence in resolve_official_computation(project):
             copy_material(project, staging, evidence["manifest_path"], "run_record", records, seen)
             for rel in evidence["source_files"]:
                 copy_material(project, staging, rel, "computation_source", records, seen)

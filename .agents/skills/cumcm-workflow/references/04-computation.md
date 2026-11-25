@@ -18,6 +18,22 @@ Run `scripts/backend_selection.py` when a recorded deterministic selection is us
 
 The mathematical formulation, variable meanings, result IDs, and acceptance checks remain language-neutral.
 
+## Choose what to record together
+
+Before an official run, ask what would need recomputing if one input, method or check changed. Keep outputs together when they are naturally produced and revised together. Give independently revised work its own entry point, output path and assertion file. Declare shared code as a source in each run that uses it.
+
+For example, in the 2016 battery problem:
+
+| Run | Reads | Produces |
+| --- | --- | --- |
+| Q1: fit discharge curves | Measurement workbook, sheet 1 | Curve knots and coefficients in `results/curves.json` |
+| Q2: predict at other currents | The fitted curves from Q1, plus the measurements used for validation | Predictions and validation errors |
+| Q3: estimate remaining time for an aged battery | Measurement workbook, sheet 2 | Remaining-time estimate and truncation checks |
+
+If Q1 and Q2 run separately, Q1 declares `--output results/curves.json:claim`. Q2 reads that file and declares `--input results/curves.json:formal`, along with the workbook if it reads measurements. Q3 declares the workbook and its own sources. Dependencies are tracked at file granularity: replacing a shared workbook can affect every reader even if the edit was on one sheet.
+
+Use `plan_redo.py --project <p> --changed code/fit_curves.py --json` to check the boundary. A change to the Q1 fit should flag Q1 and Q2; a change to a Q3-only check should flag just Q3. Rerun the upstream producer first, then its affected consumers with fresh assertions, and run `index_result.py --follow-lineage` after the replacements succeed. If a consumer explicitly reads a historical path under `runs/`, decide whether to keep that historical input or update its binding before rerunning it.
+
 ## Recording, not transcribing
 
 `record_run.py` executes the command and writes `RUN_MANIFEST.json` from what it observed. Never hand-write a manifest, a hash, or a `sha256-tree-v1` digest.

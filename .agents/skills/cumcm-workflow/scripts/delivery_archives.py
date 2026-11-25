@@ -47,7 +47,7 @@ def archive_members(root: Path, manifest: dict) -> dict[str, dict[str, str]]:
     declared_editable = set()
     index = root / 'results/RESULTS_INDEX.json'
     if index.exists():
-        for run in resolve_official_computation(root, read_object(root, 'results/RESULTS_INDEX.json')):
+        for run in resolve_official_computation(root):
             for kind in ('source_files', 'formal_inputs', 'claim_bearing_outputs'):
                 for rel in run[kind]:
                     member = live_path(str(rel))
