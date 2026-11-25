@@ -120,7 +120,7 @@ class DelegatedCheckpoints(unittest.TestCase):
             state = json.loads(state_path.read_text())
             state["current_stage"] = "model-design"
             state_path.write_text(json.dumps(state))
-            status = run_script("project_status.py", "--project", str(root), "--json")
+            status = run_script("project_status.py", "--project", str(root), "--json", encoding="utf-8")
             report = json.loads(status.stdout)
             checkpoint = next(c for c in report["checkpoints"] if c["stage"] == "model-design")
             self.assertEqual(checkpoint["authority"], "delegated_lead_agent")

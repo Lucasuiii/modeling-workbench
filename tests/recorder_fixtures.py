@@ -33,8 +33,8 @@ def write_json(root: Path, rel: str, payload: dict) -> None:
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
 
-def run_script(name: str, *args: str) -> subprocess.CompletedProcess:
-    return subprocess.run([sys.executable, str(SCRIPTS / name), *args], check=False, capture_output=True, text=True)
+def run_script(name: str, *args: str, encoding: str | None = None) -> subprocess.CompletedProcess:
+    return subprocess.run([sys.executable, str(SCRIPTS / name), *args], check=False, capture_output=True, text=True, encoding=encoding)
 
 
 SOLVER = """import json, pathlib
