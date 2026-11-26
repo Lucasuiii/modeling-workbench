@@ -162,7 +162,7 @@ class CrossCompetitionTests(unittest.TestCase):
             manifest = json.loads(initialize(root, "Model comparison", 2026, "regression").read_text(encoding="utf-8"))
             self.assertEqual(manifest["competition"], "CUMCM")
             self.assertEqual(manifest["mode"], "contest_ctex")
-            self.assertEqual(manifest["schema_version"], "0.6.0")
+            self.assertEqual(manifest["schema_version"], "0.8.0")
 
     def test_invalid_options_write_no_paper_sources(self):
         for competition, language in ((" ", "en"), ("MCM\nICM", "en"), ("MCM", "fr")):

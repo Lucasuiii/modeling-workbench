@@ -40,8 +40,8 @@ from typing import Any
 
 from canonical_evidence import live_path_of
 from provenance import sha256_file, tree_snapshot
+from workflow_validation.contracts import WORKFLOW_VERSION
 
-WORKFLOW_VERSION = "0.6.0"
 INPUT_ROLES = {"formal": "formal_input", "auxiliary": "auxiliary_input"}
 MAX_FROZEN_INPUT_BYTES = 64 * 1024 * 1024
 OUTPUT_ROLES = {"claim": "claim_bearing_output", "intermediate": "intermediate_output", "diagnostic": "diagnostic_output"}

@@ -17,8 +17,8 @@ from typing import Any
 
 import evidence_json
 from canonical_evidence import current_descendant, official_successors, successful_official
+from workflow_validation.contracts import WORKFLOW_VERSION
 
-WORKFLOW_VERSION = "0.6.0"
 EVIDENCE_STATES = (
     "not_checked", "missing_evidence", "supported_not_reproduced", "reproduced",
     "partially_supported", "contradicted", "ambiguous", "not_applicable",

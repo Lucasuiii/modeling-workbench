@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Initialize a modular v0.6 contest LaTeX paper without overwriting existing work."""
+"""Initialize a modular v0.8 contest LaTeX paper without overwriting existing work."""
 
 from __future__ import annotations
 
@@ -16,9 +16,9 @@ from typing import Any
 
 from competition import is_huawei_competition
 from official_materials import classified_official_materials
+from workflow_validation.contracts import WORKFLOW_VERSION
 
 
-WORKFLOW_VERSION = "0.6.0"
 TEMPLATE_DIRS = {"zh": "generic-ctex", "en": "generic-en"}
 
 
@@ -110,7 +110,7 @@ def validate_inputs(project: Path) -> tuple[dict[str, Any], dict[str, Any], dict
     facts = read_object(project / "analysis" / "PROBLEM_FACTS.json")
     plan = read_object(project / "paper" / "PAPER_PLAN.json")
     if state.get("workflow_version") != WORKFLOW_VERSION or state.get("schema_version") != WORKFLOW_VERSION:
-        raise ValueError("LaTeX initialization requires an exact v0.6 workflow state")
+        raise ValueError("LaTeX initialization requires an exact v0.8 workflow state")
     project_ids = {state.get("project_id"), facts.get("project_id"), plan.get("project_id")}
     if None in project_ids or len(project_ids) != 1:
         raise ValueError("state, problem facts, and paper plan must share one project_id")
@@ -328,7 +328,7 @@ def initialize(
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Initialize a Chinese or English contest LaTeX scaffold for a v0.6 project")
+    parser = argparse.ArgumentParser(description="Initialize a Chinese or English contest LaTeX scaffold for a v0.8 project")
     parser.add_argument("--project", required=True, type=Path)
     parser.add_argument("--title", required=True, help="reader-facing title derived from the actual problem")
     parser.add_argument("--competition-year", type=int, default=datetime.now().year)

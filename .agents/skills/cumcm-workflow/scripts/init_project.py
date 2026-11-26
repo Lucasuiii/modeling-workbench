@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Create a complete v0.6 modeling contest workspace and run intake preflight."""
+"""Create a complete v0.8 modeling contest workspace and run intake preflight."""
 
 from __future__ import annotations
 
@@ -16,9 +16,9 @@ from typing import Any
 from inventory_artifacts import sha256
 from record_delegation import DELEGATABLE_STAGES, record_delegation
 from workflow_checks import check_project
+from workflow_validation.contracts import WORKFLOW_VERSION
 
 
-WORKFLOW_VERSION = "0.6.0"
 PROJECT_DIRECTORIES = (
     ".cumcm/tmp",
     ".cumcm/snapshots",
@@ -266,7 +266,7 @@ def initialize(project: Path, project_id: str, official: Path, *,
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Create a complete v0.6 modeling contest workspace from official inputs and run intake preflight"
+        description="Create a complete v0.8 modeling contest workspace from official inputs and run intake preflight"
     )
     parser.add_argument("--project", required=True, type=Path, help="new or empty project directory")
     parser.add_argument("--project-id", required=True, help="stable project identifier, for example CUMCM-2026-B")

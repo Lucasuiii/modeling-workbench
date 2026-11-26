@@ -1,6 +1,6 @@
 {
   "template_id": "cumcm-contest-ctex",
-  "template_version": "0.6.0",
+  "template_version": "0.8.0",
   "engine": "xelatex",
   "mode": "contest_ctex",
   "description": "Reader-facing modular CTeX scaffold whose body order comes from PAPER_PLAN.paper_structure, with restrained contest typography and no rendered workflow metadata."

@@ -20,7 +20,7 @@ from pathlib import Path
 
 import evidence_json
 from record_delegation import active_grant
-from workflow_checks import STAGES, safe_project_path, sha256, stage_scope_paths
+from workflow_checks import STAGES, WORKFLOW_VERSION, safe_project_path, sha256, stage_scope_paths
 from provenance import digest_records
 
 
@@ -182,7 +182,7 @@ def finish_pending(root: Path, pending: dict) -> None:
         state_path = root / ".cumcm/state.json"
         state = json.loads(state_path.read_bytes())
         snapshot = {
-            "snapshot_version": "0.6.0", "project_id": state["project_id"], "stage": stage,
+            "snapshot_version": WORKFLOW_VERSION, "project_id": state["project_id"], "stage": stage,
             "decision_id": event["decision_id"], "decision": "accepted", "created_at": event["decided_at"],
             "artifacts": event["scope"], "snapshot_digest": digest_records(event["scope"]),
         }

@@ -1,6 +1,6 @@
 {
   "template_id": "modeling-contest-article",
-  "template_version": "0.6.0",
+  "template_version": "0.8.0",
   "engine": "xelatex",
   "mode": "contest_article",
   "description": "English modular article scaffold; current official format compliance must be reviewed separately."

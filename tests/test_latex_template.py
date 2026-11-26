@@ -22,7 +22,7 @@ def build_inputs(root: Path, problem_ids: tuple[str, ...] = ("Q1", "Q2"), plan_i
     state = envelope("workflow_state")
     state.update(
         {
-            "workflow_version": "0.6.0",
+            "workflow_version": "0.8.0",
             "mode": "working",
             "implementation": {"preferred": "matlab", "fallback": "python", "selection": "auto"},
             "current_stage": "paper",

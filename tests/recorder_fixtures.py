@@ -19,11 +19,11 @@ PROJECT_ID = "RECORDER-2026-A"
 
 def envelope(kind: str) -> dict:
     return {
-        "schema_version": "0.6.0",
+        "schema_version": "0.8.0",
         "artifact_type": kind,
         "project_id": PROJECT_ID,
         "updated_at": "2026-09-04T00:00:00Z",
-        "producer": {"kind": "script", "name": "test-fixture", "version": "0.6.0"},
+        "producer": {"kind": "script", "name": "test-fixture", "version": "0.8.0"},
     }
 
 

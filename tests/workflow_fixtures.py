@@ -26,11 +26,11 @@ def review(decision: str = "accepted") -> dict:
 
 def envelope(kind: str) -> dict:
     return {
-        "schema_version": "0.6.0",
+        "schema_version": "0.8.0",
         "artifact_type": kind,
         "project_id": "SYNTHETIC-2024-B",
         "updated_at": "2026-08-30T12:00:00Z",
-        "producer": {"kind": "script", "name": "test-fixture", "version": "0.6.0"},
+        "producer": {"kind": "script", "name": "test-fixture", "version": "0.8.0"},
     }
 
 
@@ -44,7 +44,7 @@ def write_accepted_snapshot(root: Path, stage: str, paths: list[str]) -> None:
     """Synthetic accepted review; tests of the recorder itself use the real CLI."""
     records = [{"path": rel, "sha256": digest((root / rel).read_bytes())} for rel in paths]
     write_json(root, f".cumcm/snapshots/{stage}.json", {
-        "snapshot_version": "0.6.0", "stage": stage, "decision": "accepted",
+        "snapshot_version": "0.8.0", "stage": stage, "decision": "accepted",
         "decision_id": f"FIXTURE-{stage}", "artifacts": records,
         "snapshot_digest": digest_records(records),
     })
@@ -59,7 +59,7 @@ def build_valid_project(root: Path) -> None:
     code_path = root / "code" / "solve.py"
     code_path.parent.mkdir()
     code_path.write_text("print('synthetic')\n", encoding="utf-8")
-    # v0.6 freezes the executed source into the run directory; the live file stays
+    # v0.8 freezes the executed source into the run directory; the live file stays
     # where it is so the checker can spot the working tree drifting away from it.
     frozen_code = root / "runs" / "RUN-Q1-001" / "source" / "code" / "solve.py"
     frozen_code.parent.mkdir(parents=True)
@@ -90,7 +90,7 @@ def build_valid_project(root: Path) -> None:
     state = envelope("workflow_state")
     state.update(
         {
-            "workflow_version": "0.6.0",
+            "workflow_version": "0.8.0",
             "mode": "working",
             "implementation": {"preferred": "matlab", "fallback": "python", "selection": "auto"},
             "current_stage": "validation",

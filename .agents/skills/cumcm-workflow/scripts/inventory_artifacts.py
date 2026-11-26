@@ -10,6 +10,8 @@ import mimetypes
 from datetime import datetime, timezone
 from pathlib import Path
 
+from workflow_validation.contracts import WORKFLOW_VERSION
+
 
 EXCLUDED_PARTS = {".git", "__pycache__", ".pytest_cache"}
 
@@ -96,11 +98,11 @@ def main() -> int:
     except ValueError as exc:
         parser.error(str(exc))
     payload = {
-        "schema_version": "0.6.0",
+        "schema_version": WORKFLOW_VERSION,
         "artifact_type": "source_manifest",
         "project_id": args.project_id,
         "updated_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
-        "producer": {"kind": "script", "name": "inventory_artifacts.py", "version": "0.6.0"},
+        "producer": {"kind": "script", "name": "inventory_artifacts.py", "version": WORKFLOW_VERSION},
         "sources": records,
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)

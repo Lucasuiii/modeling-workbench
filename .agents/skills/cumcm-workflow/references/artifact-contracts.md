@@ -1,6 +1,6 @@
 # Artifact contracts
 
-Read this reference when creating or checking v0.6 files. JSON Schemas define core machine-readable shapes, but a schema mismatch is important only when it prevents reliable interpretation of evidence.
+Read this reference when creating or checking v0.8 files. JSON Schemas define core machine-readable shapes, but a schema mismatch is important only when it prevents reliable interpretation of evidence.
 
 ## Canonical artifacts
 
@@ -32,4 +32,4 @@ Stable IDs and exact result locators remain important. Paper plans and quality r
 
 Working mode permits a draft model contract and incomplete downstream contracts. Finalizing requires the frozen model contract with a resolved candidate comparison, current decisions, snapshots, handoffs, review, PDF QA, and delivery.
 
-v0.6 rejects any contract whose `schema_version` is not `0.6.0` and ships no migration path. An older workspace is re-initialised from its official files.
+v0.8 rejects any contract whose `schema_version` is not `0.8.0` and ships no migration path. An older workspace is re-initialised from its official files.

@@ -1,7 +1,7 @@
 {
   "name": "CUMCM 2024 B policy-scope regression",
   "purpose": "Ensure the workflow does not confuse a restricted fixed-policy enumeration with a globally optimal feedback policy.",
-  "workflow_version": "0.6.0",
+  "workflow_version": "0.8.0",
   "checks": [
     {
       "id": "scope-1",

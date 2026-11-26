@@ -1,4 +1,4 @@
-# Modeling Workbench
+# Modeling Workbench v0.8
 
 简体中文 | [English](README.en.md)
 
@@ -125,7 +125,7 @@ python3 "$S/project_status.py" --project /绝对路径/已有项目
 
 可用 Codex 的 `$cumcm-workflow` 或 Claude Code 的 `/cumcm-workflow` 触发，仍需提供材料目录和新项目目录，并确认实际 Skill 路径及环境可用。
 
-仓库名为 `modeling-workbench`，Skill 调用名、目录和 `.cumcm` 工作区格式保持不变。当前版本 **v0.6**；不支持旧于 v0.6 的工作区。此次多比赛扩展保留 CUMCM/中文默认值，现有 v0.6 工作区无需迁移。
+当前版本为 **v0.8.0**，包含阶段托管、分包交付和按职责拆分的校验器。新项目使用 `0.8.0` 契约。已有 `0.6.0` 工作区可用原版本继续；若采用新版，请在新目录中用原始官方材料重新初始化。
 
 </details>
 
@@ -172,7 +172,7 @@ python3 "$S/project_status.py" --project /绝对路径/已有项目
 
 ## 2. 两条规则
 
-整个 v0.6 就是这两句话的展开。
+整个 v0.8 就是这两句话的展开。
 
 ### ① tooling 记录机器事实，agent 写语义判断
 
@@ -212,7 +212,7 @@ A 做 official computation
 Validation
 ```
 
-这条链在 v0.6 里是**有结构、被检查**的，不只是一段建议：
+这条链在 v0.8 里是**有结构、被检查**的，不只是一段建议：
 
 - 恰好一个候选可以是 `selected`（`MODEL-E013`）；
 - 被选中的候选必须引用真的评估过它的运行（`MODEL-W014`）；
@@ -322,7 +322,7 @@ ERROR RUN-E020  the working tree no longer matches this official run: code/solve
 
 ## 5. 两个旋钮
 
-v0.6 没有 profile。只有：
+v0.8 没有 profile。只有：
 
 | 旋钮 | 取值 | 决定 |
 |---|---|---|
@@ -548,7 +548,7 @@ ln -s "$PWD/.agents/skills/cumcm-workflow" ~/.claude/skills/cumcm-workflow
 .agents/skills/cumcm-workflow/   # canonical
 .claude/skills/cumcm-workflow/   # Claude Code 路由
 CLAUDE.md                        # 改仓库时的约定
-docs/                            # 架构、合同、provenance、限制、v0.6 设计
+docs/                            # 架构、合同、provenance、限制、原始设计
 tests/  examples/  .github/workflows/ci.yml
 ```
 
@@ -562,7 +562,7 @@ python3 -m compileall -q .agents/skills/cumcm-workflow/scripts tests
 
 CI 分三路运行测试：Ubuntu＋Python 3.10、Ubuntu＋Python 3.13＋TeX Live/Poppler，以及原生 Windows＋Python 3.13。三路都调用完整 unittest；缺少外部工具的用例按条件跳过，Linux LaTeX 作业负责**真实 XeLaTeX 编译**。Windows 作业另运行 compileall 和 JSON Schema 校验。实际通过状态以 [Actions](https://github.com/Lucasuiii/modeling-workbench/actions) 为准。共用 fixture 位于 `tests/workflow_fixtures.py` 与 `tests/recorder_fixtures.py`，回归用例仍全部保留。
 
-不向下兼容：v0.6 拒绝任何 `schema_version` 不是 `0.6.0` 的契约，仓库里也不再保留迁移脚本。旧工作区请用官方文件重新初始化。
+不向下兼容：v0.8 拒绝任何 `schema_version` 不是 `0.8.0` 的契约，仓库里也不再保留迁移脚本。旧工作区请用官方文件重新初始化。
 
 ---
 

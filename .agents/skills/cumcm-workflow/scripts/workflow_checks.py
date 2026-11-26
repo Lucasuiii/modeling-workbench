@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Deterministic v0.6 evidence, freshness, and cross-artifact checks.
+"""Deterministic v0.8 evidence, freshness, and cross-artifact checks.
 
 The checks in this module establish structure, provenance, recorded execution,
 and declared relationships. They do not establish mathematical correctness.
@@ -390,7 +390,7 @@ def check_project(
 ) -> tuple[list[Finding], dict[str, Any]]:
     """Deterministic evidence check through `stage`.
 
-    v0.6 has exactly two knobs: the project mode (`working` / `finalizing`) decides
+    v0.8 has exactly two knobs: the project mode (`working` / `finalizing`) decides
     which contracts must be complete, and `gate_mode` decides whether human-gated
     findings count toward the blocking total.
     """

@@ -26,7 +26,7 @@ The Claude Code Skill at `.claude/skills/cumcm-workflow/SKILL.md` routes to the 
 - **Freezing must not cost drift detection.** Because the frozen copy cannot change, staleness is measured as frozen-versus-live (`RUN-E020`), and tampering with the frozen copy is a separate failure (`RUN-E021`). If you add another frozen artifact, add its drift check at the same time.
 - Do not add a check whose only evidence is that someone asserted it. If it cannot be measured, it belongs in `REVIEW_REQUEST.md` as a named failure class for a human or a fresh-context reviewer.
 - **A free-text field is not a check.** `alternatives_considered` was a string array whose only rule was "non-empty", so "I compared alternatives" was unfalsifiable. Structured `candidates` replaced it because a candidate can be tied to the runs that evaluated it. Apply the same test to anything new: what would make this claim wrong, and can a script see it?
-- **No backward compatibility.** v0.6 rejects any contract whose `schema_version` is not `0.6.0`, and the repository keeps no migration scripts or historical design documents. An older workspace is re-initialised from its official files.
+- **No backward compatibility.** v0.8 rejects any contract whose `schema_version` is not `0.8.0`, and the repository keeps no migration scripts or historical design documents. An older workspace is re-initialised from its official files.
 
 ## Development
 
@@ -49,4 +49,4 @@ Verify a fix by reverting it and confirming the new test goes red. A test that p
 
 ## Version bumps
 
-`WORKFLOW_VERSION` in `scripts/workflow_validation/contracts.py` and the recorders, the `const` in every schema, and `pyproject.toml`. The checker rejects any contract whose `schema_version` differs; that is intentional, and existing workspaces are re-initialised rather than migrated. Say so in the README when you bump.
+`WORKFLOW_VERSION` in `scripts/workflow_validation/contracts.py`, the version constants in the common and workflow-state schemas, and `pyproject.toml`. The checker rejects any contract whose `schema_version` differs; that is intentional, and existing workspaces are re-initialised rather than migrated. Say so in the README when you bump.
