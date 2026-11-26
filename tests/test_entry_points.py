@@ -157,7 +157,7 @@ class RemovedVocabularyTests(unittest.TestCase):
                 self.assertNotIn("--profile", text)
 
     def test_scripts_and_schemas_do_not_mention_removed_contracts(self):
-        for path in sorted(SCRIPTS.glob("*.py")) + sorted((CANONICAL / "schemas").glob("*.json")):
+        for path in sorted(SCRIPTS.rglob("*.py")) + sorted((CANONICAL / "schemas").glob("*.json")):
             text = path.read_text(encoding="utf-8")
             for token in ("PAPER_TRACEABILITY", "conclusions_withheld", "PROFILES"):
                 with self.subTest(path=path.name, token=token):
