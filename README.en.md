@@ -8,7 +8,7 @@ A mathematical modeling competition workflow for **Codex / Claude Code**. Supply
 
 **Read the problem → compare models → compute → review independently → write → check and deliver the PDF**
 
-- **Compare before committing to a model**: evaluate candidates and record why a model was selected before official computation.
+- **Compare before committing to a model**: state which trial outcome would change the choice. For a proposed upgrade, identify the baseline weakness and use the observed comparison to decide whether the added complexity is worthwhile.
 - **Trace paper values to their source**: computation records connect code, data and results, with stale-evidence detection after code changes.
 - **Develop the argument with useful visuals**: explain key derivations and results, actively illustrate existing evidence and model mechanisms, and respect the competition’s space limits.
 - **Deliver inspectable materials**: a Chinese or English paper, source and results, review records, and a compiled PDF checked page by page.
