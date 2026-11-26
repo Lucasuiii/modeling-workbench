@@ -24,6 +24,7 @@ Freezing a run for formal results costs a few declarations:
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import mimetypes
 import os
@@ -33,11 +34,13 @@ import shutil
 import subprocess
 import sys
 import tempfile
-from contextlib import contextmanager
+import unicodedata
+from contextlib import ExitStack, contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from file_lock import file_lock
 from canonical_evidence import live_path_of
 from provenance import sha256_file, tree_snapshot
 from workflow_validation.contracts import WORKFLOW_VERSION
@@ -261,7 +264,7 @@ def fresh_output_transaction(root: Path, run_dir: Path, paths: set[str]):
     """Commit live fresh evidence only when the manifest write succeeds.
 
     Keep old backups and rejected new files for recovery. This does not roll back
-    arbitrary model side effects or protect against concurrent/malicious writers.
+    arbitrary model side effects or protect against writers outside the recorder.
     """
     backups = {}
     prepared = []
@@ -298,6 +301,11 @@ def fresh_output_transaction(root: Path, run_dir: Path, paths: set[str]):
 
 
 def main() -> int:
+    with ExitStack() as output_locks:
+        return record_run(output_locks)
+
+
+def record_run(output_locks: ExitStack) -> int:
     parser = argparse.ArgumentParser(description="Run a command and record its evidence; the agent never types a hash")
     parser.add_argument("--project", required=True, type=Path)
     parser.add_argument("--run-id")
@@ -385,6 +393,24 @@ def main() -> int:
             require_human_checkpoint(root, "model-design")
         except ValueError as exc:
             parser.error(str(exc))
+    declared_output_paths = [relative(root, spec.split(":", 1)[0]) for spec in declared_outputs]
+    assert_file_rel = relative(root, args.assert_file) if args.assert_file else None
+    output_paths = set(declared_output_paths)
+    if assert_file_rel:
+        output_paths.add(assert_file_rel)
+    if output_paths:
+        lock_dir = root / ".cumcm" / "output-locks"
+        lock_dir.mkdir(parents=True, exist_ok=True)
+        # Sidecars survive output replacement and rollback. Keep their names
+        # stable across common case-insensitive filesystems and Unicode aliases.
+        lock_keys = {unicodedata.normalize("NFC", rel).casefold(): rel for rel in sorted(output_paths)}
+        for key, rel in sorted(lock_keys.items()):
+            name = hashlib.sha256(key.encode("utf-8")).hexdigest()
+            try:
+                output_locks.enter_context(file_lock(lock_dir / name, wait=False))
+            except BlockingIOError:
+                parser.error(f"output already reserved by another run: {rel}; retry after it finishes")
+
     # Reserve the directory before launching a process, including unfinished runs.
     # mkdir is atomic; simultaneous automatic allocations retry rather than overwrite.
     (root / "runs").mkdir(exist_ok=True)
@@ -404,7 +430,6 @@ def main() -> int:
 
     # P0: a program that exits 0 without rewriting its output would otherwise have
     # the previous run's file frozen as its own, with a real hash and false provenance.
-    declared_output_paths = [relative(root, spec.split(":", 1)[0]) for spec in declared_outputs]
     mtimes_before = {rel: mtime_of(root, rel) for rel in declared_output_paths}
     # Freezing happens after execution, so the copy is only honest if the file did
     # not move under the run. Hash what the run is about to read, and check after.
@@ -419,7 +444,6 @@ def main() -> int:
         parser.error(
             "declared source or input does not exist before the run: " + ", ".join(absent)
         )
-    assert_file_rel = relative(root, args.assert_file) if args.assert_file else None
     read_before = {
         rel: sha256_file(root / rel)
         for rel in dict.fromkeys(sources + declared_input_paths)

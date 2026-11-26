@@ -1,6 +1,8 @@
 """Execution-backed regressions for compile evidence and declared redo scope."""
 import json
+import os
 import shutil
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -182,6 +184,46 @@ class CompileRegressionTests(unittest.TestCase):
 
 
 class MissingEvidenceTests(unittest.TestCase):
+    def test_timeout_at_each_stage_retires_receipt_and_page_previews(self):
+        for tool in ('xelatex', 'pdfinfo', 'pdftoppm'):
+            with self.subTest(tool=tool), tempfile.TemporaryDirectory() as temp:
+                root = make_project(Path(temp))
+                paper = root / 'paper'
+                (paper / 'main.tex').write_text(MINIMAL_TEX, encoding='utf-8')
+                write_json(root, 'paper/LATEX_TEMPLATE_MANIFEST.json', {'engine': 'xelatex'})
+                receipt = root / 'delivery/COMPILE_RECEIPT.json'
+                write_json(root, 'delivery/COMPILE_RECEIPT.json', {'old': True})
+                pages = root / '.cumcm/tmp/pages'
+                pages.mkdir(parents=True, exist_ok=True)
+                (pages / 'page-1.png').write_bytes(b'old')
+                def invoke(argv, **options):
+                    if argv[0] == tool:
+                        if tool == 'pdftoppm':
+                            (pages / 'page-1.png').write_bytes(b'partial')
+                        self.assertEqual(options.get('timeout'), 2)
+                        raise subprocess.TimeoutExpired(argv, 2)
+                    if argv[0] == 'xelatex':
+                        pdf = paper / 'main.pdf'
+                        timestamp = int(pdf.stat().st_mtime) + 2 if pdf.exists() else 1700000000
+                        pdf.write_bytes(b'fixture')
+                        os.utime(pdf, (timestamp, timestamp))
+                        (paper / 'main.log').write_text('')
+                        (paper / 'main.fls').write_text('INPUT main.tex\n')
+                        return subprocess.CompletedProcess(argv, 0, '', '')
+                    self.assertEqual(argv[0], 'pdfinfo')
+                    return subprocess.CompletedProcess(argv, 0, 'Pages: 1', '')
+                argv = ['record_compile.py', '--project', str(root), '--timeout', '2']
+                with patch.object(sys, 'argv', argv), patch.object(rc, 'runtime_roots', return_value=[]), \
+                     patch.object(rc.shutil, 'which', side_effect=lambda name: name), \
+                     patch.object(rc.subprocess, 'run', side_effect=invoke):
+                    self.assertEqual(rc.main(), 1)
+                self.assertFalse(receipt.exists())
+                self.assertFalse(list(pages.glob('*.png')))
+                self.assertTrue(list(receipt.parent.glob('compile-*/COMPILE_RECEIPT.json')))
+                log = (receipt.parent / 'compile.log').read_text(encoding='utf-8')
+                self.assertIn(tool, log)
+                self.assertIn('timed out', log)
+
     def test_page_count_cannot_be_invented_without_parser(self):
         with tempfile.TemporaryDirectory() as temp:
             pdf = Path(temp) / 'fake.pdf'

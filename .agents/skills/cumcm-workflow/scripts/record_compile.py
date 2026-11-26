@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import os
 import re
 import shutil
@@ -22,6 +23,8 @@ from typing import Any
 from provenance import sha256_file, tree_snapshot
 from compile_sources import observed_sources, runtime_roots
 from workflow_validation.contracts import WORKFLOW_VERSION
+
+STEP_TIMEOUT = 300
 
 LOG_PATTERNS = {
     "overfull": re.compile(r"^Overfull \\[hv]box", re.M),
@@ -63,10 +66,10 @@ def engine_version(engine: str) -> str:
         return f"{engine} (version unknown)"
 
 
-def page_count(pdf: Path) -> int:
+def page_count(pdf: Path, timeout: float = STEP_TIMEOUT) -> int:
     if not shutil.which("pdfinfo"):
         raise ValueError("pdfinfo is unavailable; cannot record a reliable page count")
-    completed = subprocess.run(["pdfinfo", str(pdf)], capture_output=True, text=True, check=False)
+    completed = subprocess.run(["pdfinfo", str(pdf)], capture_output=True, text=True, check=False, timeout=timeout)
     if completed.returncode == 0:
         for line in completed.stdout.splitlines():
             if line.startswith("Pages:"):
@@ -76,14 +79,14 @@ def page_count(pdf: Path) -> int:
     raise ValueError("pdfinfo could not read the produced PDF")
 
 
-def render_pages(pdf: Path, out_dir: Path) -> list[int]:
+def render_pages(pdf: Path, out_dir: Path, timeout: float = STEP_TIMEOUT) -> list[int]:
     """Rasterise every page so a reviewer looks at pixels, not at a promise."""
     if out_dir.exists():
         shutil.rmtree(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     if not shutil.which("pdftoppm"):
         return []
-    completed = subprocess.run(["pdftoppm", "-png", "-r", "110", str(pdf), str(out_dir / "page")], capture_output=True, text=True, check=False)
+    completed = subprocess.run(["pdftoppm", "-png", "-r", "110", str(pdf), str(out_dir / "page")], capture_output=True, text=True, check=False, timeout=timeout)
     if completed.returncode:
         shutil.rmtree(out_dir)
         return []
@@ -113,12 +116,16 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Compile the paper and write delivery/COMPILE_RECEIPT.json from observed facts")
     parser.add_argument("--project", required=True, type=Path)
     parser.add_argument("--passes", type=int, default=2)
+    parser.add_argument("--timeout", type=float, default=STEP_TIMEOUT,
+                        help="seconds per TeX pass, page count or render command (default: 300)")
     parser.add_argument("--engine")
     parser.add_argument("--attempt-id", default="ATTEMPT-001")
     parser.add_argument("--no-render", action="store_true", help="skip per-page rasterisation")
     parser.add_argument("--update-quality", action="store_true", help="refresh the machine fields of PAPER_QUALITY_REPORT.layout_report")
     args = parser.parse_args()
 
+    if not math.isfinite(args.timeout) or args.timeout <= 0:
+        parser.error("--timeout must be a finite positive number of seconds")
     root = args.project.resolve()
     if not root.is_dir():
         parser.error(f"project is not a directory: {root}")
@@ -164,8 +171,9 @@ def main() -> int:
             before_pdf = pdf_path.stat().st_mtime_ns if pdf_path.exists() else None
             fls.unlink(missing_ok=True)
             engine_log.unlink(missing_ok=True)
-            completed = subprocess.run(argv, cwd=work_dir, capture_output=True, text=True, check=False)
-            transcript += f"\n--- pass {pass_index + 1} ---\n" + completed.stdout + completed.stderr
+            transcript += f"\n--- pass {pass_index + 1} ---\n"
+            completed = subprocess.run(argv, cwd=work_dir, capture_output=True, text=True, check=False, timeout=args.timeout)
+            transcript += completed.stdout + completed.stderr
             exit_code = completed.returncode
             if engine_log.is_file():
                 final_log = engine_log.read_text(encoding="utf-8", errors="replace")
@@ -184,12 +192,14 @@ def main() -> int:
                 raise ValueError("compiled dependency set or content changed; rerun after stabilizing sources")
             source_snapshot = current
         checks = log_checks(final_log)
-        pages_total = page_count(pdf_path)
+        pages_total = page_count(pdf_path, args.timeout)
         pdf_hash = sha256_file(pdf_path)
-        rendered = [] if args.no_render else render_pages(pdf_path, pages_dir)
+        rendered = [] if args.no_render else render_pages(pdf_path, pages_dir, args.timeout)
         if sha256_file(pdf_path) != pdf_hash or tree_snapshot(root, source_snapshot["files"], entrypoint=main_rel) != source_snapshot:
             raise ValueError("PDF or source changed while recording compile evidence")
     except (OSError, ValueError, subprocess.SubprocessError) as exc:
+        if pages_dir.exists():
+            shutil.rmtree(pages_dir)
         (root / log_rel).write_text(transcript + f"\nRecorder failure: {exc}\n", encoding="utf-8")
         print(f"{exc}; see {log_rel}")
         return 1
