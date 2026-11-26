@@ -21,8 +21,8 @@ from typing import Any
 
 from provenance import sha256_file, tree_snapshot
 from compile_sources import observed_sources, runtime_roots
+from workflow_validation.contracts import WORKFLOW_VERSION
 
-WORKFLOW_VERSION = "0.6.0"
 LOG_PATTERNS = {
     "overfull": re.compile(r"^Overfull \\[hv]box", re.M),
     "underfull": re.compile(r"^Underfull \\[hv]box", re.M),

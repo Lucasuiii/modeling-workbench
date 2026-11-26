@@ -23,7 +23,7 @@ For paper initialization, pass the actual `--competition` and `--language zh|en`
 
 ## Start or resume
 
-1. Read the project's `.cumcm/state.json` and the incoming handoff, if present. Resume exact `0.6.0` projects; older schemas are unsupported.
+1. Read the project's `.cumcm/state.json` and the incoming handoff, if present. Resume exact `0.8.0` projects; older schemas are unsupported.
 2. For a new project, use [intake](references/01-intake.md) and `init_project.py` with the supplied official files.
 3. Read **only the active stage guide** below. Consult a schema only when the guide and command help leave a specific field unresolved; do not load the checker to learn the workflow.
 4. Define `S` as the **absolute path** to this Skill's `scripts` directory. All examples use `python3 "$S/<command>.py"`; the contest workspace does not contain these scripts.

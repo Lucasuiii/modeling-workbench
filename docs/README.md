@@ -8,4 +8,4 @@
 
 实际使用从仓库根目录的 [README](../README.md) 开始；机器可执行规则以 `.agents/skills/cumcm-workflow/` 中的 Skill、schema 和 script 为准。
 
-v0.6 不向下兼容，仓库不保留历史版本设计文档与迁移脚本。
+当前 v0.8 不向下兼容，仓库不保留历史版本设计文档与迁移脚本。

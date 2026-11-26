@@ -85,7 +85,7 @@ class ProjectInitializerTests(unittest.TestCase):
             self.assertFalse((project / "problem" / "official" / ".DS_Store").exists())
 
             state = json.loads((project / ".cumcm" / "state.json").read_text(encoding="utf-8"))
-            self.assertEqual(state["workflow_version"], "0.6.0")
+            self.assertEqual(state["workflow_version"], "0.8.0")
             self.assertEqual(state["mode"], "working")
             self.assertEqual(state["implementation"], {"preferred": "matlab", "fallback": "python", "selection": "auto"})
             self.assertEqual(state["current_stage"], "intake")

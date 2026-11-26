@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run v0.6 CUMCM evidence checks and write a machine-readable report."""
+"""Run v0.8 CUMCM evidence checks and write a machine-readable report."""
 
 from __future__ import annotations
 
@@ -9,13 +9,13 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-from workflow_checks import GATE_MODES, STAGES, check_project
+from workflow_checks import GATE_MODES, STAGES, WORKFLOW_VERSION, check_project
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(
         description=(
-            "Validate v0.6 workflow evidence. A passing result establishes "
+            "Validate v0.8 workflow evidence. A passing result establishes "
             "traceability and recorded evidence, not mathematical correctness."
         )
     )
@@ -48,7 +48,7 @@ def main() -> int:
         return 2
 
     payload = {
-        "report_version": "0.6.0",
+        "report_version": WORKFLOW_VERSION,
         "generated_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         "project_root": str(project),
         "summary": summary,

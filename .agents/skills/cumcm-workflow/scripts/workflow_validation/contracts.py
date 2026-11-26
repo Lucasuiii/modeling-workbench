@@ -27,7 +27,7 @@ EVIDENCE_STATES = {
 }
 REVIEW_DECISIONS = {"unreviewed", "accepted", "accepted_with_concerns", "revision_requested"}
 GATE_MODES = {"preflight", "enforce"}
-WORKFLOW_VERSION = "0.6.0"
+WORKFLOW_VERSION = "0.8.0"
 WORKFLOW_MODES = {"working", "finalizing"}
 
 

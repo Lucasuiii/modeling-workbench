@@ -24,7 +24,7 @@ def record_decisions(root: Path, stages: tuple[str, ...]) -> None:
         }
         events.append(event)
         snapshot = {
-            "snapshot_version": "0.6.0", "project_id": "SYNTHETIC-2024-B", "stage": stage,
+            "snapshot_version": "0.8.0", "project_id": "SYNTHETIC-2024-B", "stage": stage,
             "decision_id": event["decision_id"], "decision": "accepted", "created_at": event["decided_at"],
             "artifacts": scope, "snapshot_digest": digest_records(scope),
         }

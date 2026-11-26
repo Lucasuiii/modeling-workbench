@@ -1,4 +1,4 @@
-# Modeling Workbench
+# Modeling Workbench v0.8
 
 English | [简体中文](README.md)
 
@@ -129,7 +129,7 @@ Add `--json` for the full structured report. Environment checks are stage-specif
 
 Invoke `$cumcm-workflow` in Codex or `/cumcm-workflow` in Claude Code. Still provide the materials and new-project directories, and confirm the actual Skill path and environment are usable.
 
-The repository is named `modeling-workbench`; the Skill invocation, directory and `.cumcm` workspace format are unchanged. Current version: **v0.6**; workspaces older than v0.6 are unsupported. The multi-competition extension retains CUMCM/Chinese defaults, so existing v0.6 workspaces need no migration.
+**v0.8.0** includes stage-scoped delegation, separate delivery archives and modular validation. New projects use the `0.8.0` contract. Continue an existing `0.6.0` workspace with its original version, or initialize a fresh v0.8.0 project directory from the official inputs.
 
 </details>
 
@@ -158,7 +158,7 @@ Validation covers actual compilation, rendering and packaging of both language s
 
 ---
 
-## 1. What v0.6 is about
+## 1. How v0.8 works
 
 **Tooling records machine facts; the agent writes judgement.**
 

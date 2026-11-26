@@ -1,4 +1,4 @@
-"""End-to-end tests for the v0.6 recorders and Deferred Model Selection.
+"""End-to-end tests for the v0.8 recorders and Deferred Model Selection.
 
 Unlike the contract tests, these do not hand-write a single hash: every run,
 result and compile receipt here is produced by the tooling the workflow ships.
@@ -688,7 +688,7 @@ class CompileRecorderTests(unittest.TestCase):
             (project / "paper" / "main.tex").write_text(MINIMAL_TEX, encoding="utf-8")
             manifest = envelope("latex_template_manifest")
             manifest.update({
-                "template_id": "test-minimal", "template_version": "0.6.0", "mode": "contest_ctex",
+                "template_id": "test-minimal", "template_version": "0.8.0", "mode": "contest_ctex",
                 "engine": "xelatex", "competition": "CUMCM", "competition_year": 2026,
                 "official_compliance": "unverified", "official_template_source": None,
                 "main_path": "paper/main.tex", "metadata_path": "paper/main.tex",
@@ -717,7 +717,7 @@ class CompileRecorderTests(unittest.TestCase):
             (project / "paper" / "main.tex").write_text(MINIMAL_TEX, encoding="utf-8")
             manifest = envelope("latex_template_manifest")
             manifest.update({
-                "template_id": "test-minimal", "template_version": "0.6.0", "mode": "contest_ctex",
+                "template_id": "test-minimal", "template_version": "0.8.0", "mode": "contest_ctex",
                 "engine": "xelatex", "competition": "CUMCM", "competition_year": 2026,
                 "official_compliance": "unverified", "official_template_source": None,
                 "main_path": "paper/main.tex", "metadata_path": "paper/main.tex",

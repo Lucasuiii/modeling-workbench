@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Atomically switch a v0.6 workspace between working and finalizing."""
+"""Atomically switch a v0.8 workspace between working and finalizing."""
 
 from __future__ import annotations
 
@@ -48,7 +48,7 @@ def _set_mode(project: Path, mode: str) -> dict:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Switch a v0.6 project between working and finalizing")
+    parser = argparse.ArgumentParser(description="Switch a v0.8 project between working and finalizing")
     parser.add_argument("--project", required=True, type=Path)
     parser.add_argument("--mode", required=True, choices=("working", "finalizing"))
     args = parser.parse_args()

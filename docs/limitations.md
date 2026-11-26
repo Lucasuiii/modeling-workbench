@@ -2,8 +2,8 @@
 
 - 跨比赛 LaTeX/PDF 链路支持真实比赛名称与中英文通用骨架，复用原编译、快照、复核与交付机制。通用骨架不是当届官方模板；比赛专用格式、摘要页、附加文书与结果文件仍须按官方材料适配和核验。已声明的官方论文模板会阻止通用初始化，需先采用或适配官方模板。没有 DOCX 导出链，也不自动转换任意官方模板。合成流程测试及骨架编译不等于逐赛事实题认证。见 [比赛适配](../.agents/skills/cumcm-workflow/references/competition-adaptation.md)。
 
-- v0.6 检查通过不代表模型、统计设计或全局最优性已经被证明。
-- v0.6 不向下兼容，也不提供迁移脚本：旧工作区用官方文件重新初始化。
+- v0.8 检查通过不代表模型、统计设计或全局最优性已经被证明。
+- v0.8 不向下兼容，也不提供迁移脚本：旧工作区用官方文件重新初始化。
 - Fresh context 能减少上下文污染，但不能证明 reviewer 真正独立；origin/reviewer task ref 仍是用户和工具记录的证据。
 - 同一模型的 fresh task 仍具有相关性，只能标记为 context-separated model correlated。
 - 后端选择依据声明的任务特征、已有代码和运行环境，不能自动 benchmark 所有 MATLAB toolbox 或 Python package。

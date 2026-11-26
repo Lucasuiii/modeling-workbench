@@ -1,6 +1,6 @@
 [project]
 name = "cumcm-workflow"
-version = "0.6.0"
+version = "0.8.0"
 description = "Contest-native, evidence-focused CUMCM workflow for Codex and Claude Code"
 license = {file = "LICENSE"}
 requires-python = ">=3.10"

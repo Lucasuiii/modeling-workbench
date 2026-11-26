@@ -15,9 +15,9 @@ import evidence_json
 from canonical_evidence import resolve_official_computation
 from official_materials import classified_official_materials
 from provenance import digest_records, sha256_file, snapshot_matches
+from workflow_validation.contracts import WORKFLOW_VERSION
 
 
-WORKFLOW_VERSION = "0.6.0"
 TRANSITIONS = {
     "modeling-computation": ("model-design", "computation"),
     "computation-validation": ("computation", "validation"),
@@ -355,7 +355,7 @@ def build(root: Path, transition: str, task_ref: str | None = None) -> Path:
     records: list[dict[str, str]] = []
     for rel, role in BASE_PATHS[transition]:
         add_artifact(root, records, rel, role)
-    # The cross-question ledger is optional in v0.6; bind it only when it exists.
+    # The cross-question ledger is optional in v0.8; bind it only when it exists.
     for rel, role in OPTIONAL_PATHS.get(transition, []):
         if (root / rel).is_file():
             add_artifact(root, records, rel, role)
@@ -418,7 +418,7 @@ def build(root: Path, transition: str, task_ref: str | None = None) -> Path:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Build a compact v0.6 cross-stage handoff")
+    parser = argparse.ArgumentParser(description="Build a compact v0.8 cross-stage handoff")
     parser.add_argument("--project", required=True, type=Path)
     parser.add_argument("--transition", required=True, choices=sorted(TRANSITIONS))
     parser.add_argument(

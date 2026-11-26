@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Small deterministic digest helpers for v0.6 snapshots and handoffs."""
+"""Small deterministic digest helpers for v0.8 snapshots and handoffs."""
 
 from __future__ import annotations
 

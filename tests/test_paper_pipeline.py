@@ -39,7 +39,7 @@ class PaperPipelineTests(unittest.TestCase):
             build_paper_ready_project(root)
             findings, summary = check_project(root, "delivery")
             self.assertEqual([item for item in findings if item.severity == "error"], [])
-            self.assertEqual(summary["workflow_version"], "0.6.0")
+            self.assertEqual(summary["workflow_version"], "0.8.0")
             self.assertEqual(summary["gate_status"], "passed")
 
     def test_no_planned_visual_is_warning_only(self):
@@ -515,9 +515,9 @@ class CapabilityDeliveryTests(unittest.TestCase):
             root = Path(temp)
             build_paper_ready_project(root)
             explore = {
-                "schema_version": "0.6.0", "artifact_type": "run_manifest",
+                "schema_version": "0.8.0", "artifact_type": "run_manifest",
                 "project_id": "TEST", "updated_at": "2026-08-30T12:00:00Z",
-                "producer": {"kind": "script", "name": "record_run.py", "version": "0.6.0"},
+                "producer": {"kind": "script", "name": "record_run.py", "version": "0.8.0"},
                 "run_id": "RUN-EXP-001", "purpose": "compare two candidates cheaply",
                 "argv": ["python3", "explore.py"], "working_directory": ".",
                 "started_at": "2026-08-30T12:00:00Z", "finished_at": "2026-08-30T12:00:01Z",

@@ -86,7 +86,7 @@
       ],
       "properties": {
         "schema_version": {
-          "const": "0.6.0"
+          "const": "0.8.0"
         },
         "artifact_type": {
           "type": "string",
