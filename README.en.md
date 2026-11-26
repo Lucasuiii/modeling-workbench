@@ -79,10 +79,20 @@ Read the complete .agents/skills/cumcm-workflow/SKILL.md in the tools directory.
 Check the environment and official materials first; do not overwrite existing work.
 Report missing dependencies without installing them in this conversation.
 Identify the contest, year, paper language and submission requirements from
-the materials; ask me if unclear. At initialization ask how I want to delegate decisions, then start problem analysis.
+the materials; ask me if unclear. At initialization briefly explain delegation, then ask which decisions I want the lead agent to make, then start problem analysis.
 ```
 
-**At startup choose human review, delegated modeling with user sign-off, or delegation including final local delivery.** You can also specify individual checkpoints. Reuse the prepared environment by starting at step 2 for another problem. To resume interrupted work, provide the project output directory and ask to “resume cumcm-workflow”; resume an existing project instead of initializing it again.
+**What does delegation mean at startup?** You choose which decisions the lead agent can make on your behalf. It uses trial results and independent review to make those decisions and records its reasons. A new project starts with a short explanation and these choices.
+
+| Choice | Who selects the model and accepts the paper’s claims | Who reviews the pages and signs off on the local delivery |
+| --- | --- | --- |
+| Human review | You | You |
+| Delegated modeling | Lead agent | You |
+| Full delegation | Lead agent | Lead agent |
+
+You can also delegate a single decision, such as model selection. Submitting to a competition platform requires separate permission.
+
+Reuse the prepared environment by starting at step 2 for another problem. To resume interrupted work, provide the project output directory and ask to “resume cumcm-workflow”; resume an existing project instead of initializing it again.
 
 You can also ask “check my environment” or “where is this project now?”. The agent uses environment or project diagnostics to report missing dependencies, evidence issues and pending decisions. These tools do not install software, change project state or approve work for you.
 
