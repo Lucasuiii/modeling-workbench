@@ -415,8 +415,15 @@ class ModesAndReviewTests(unittest.TestCase):
             self.assertFalse(any(item["path"].startswith("runs/") for item in handoff["canonical_artifacts"]))
             self.assertEqual(
                 set(handoff["payload"]),
-                {"problem_summary", "model_summary", "verified_results", "claims", "limitations", "representation_candidates", "official_format_files", "official_materials"},
+                {"problem_summary", "model_summary", "verified_results", "claims", "limitations", "representation_candidates", "official_format_files", "official_materials", "next_task"},
             )
+            payload = handoff["payload"]
+            index = json.loads((root / "results/RESULTS_INDEX.json").read_bytes())
+            claim = payload["claims"][0]
+            expected = next(r for r in index["results"] if r["result_id"] in claim["result_ids"])
+            result = next(r for r in payload["verified_results"] if r["result_id"] == expected["result_id"])
+            self.assertEqual(result["output_locator"], expected["output_locator"])
+            self.assertTrue((root / result["output_locator"].split("#")[0]).is_file())
             self.assertIn("debug transcripts", handoff["excluded_history"])
 
     def test_paper_handoff_uses_real_limitations_and_proactive_representation_candidates(self):

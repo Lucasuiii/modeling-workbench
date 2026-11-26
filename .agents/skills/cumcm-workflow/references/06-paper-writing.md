@@ -12,7 +12,7 @@ Default to a fully developed, visually informative paper. Give important reasoni
 
 1. Select the validated claims that answer the official questions.
 2. Actively look for useful visual explanations in the handoff candidates and existing evidence; choose complementary prose, equations, tables and figures for the important claims.
-3. Design `paper_structure` as the semantic argument flow.
+3. In each substantive section’s `paper_structure.purpose`, name the question a skeptical reader would ask about the modeling choice. For example, “If the voltage crosses the same threshold twice, which crossing defines the remaining time, and how much can that choice matter?” Write the question in terms of the current problem.
 4. Generate the selected tables/figures from existing results and draw helpful model/algorithm diagrams. Do not stop at whatever images the computation stage happened to export.
 5. Adapt a declared official paper template when supplied; otherwise initialize the generic scaffold and keep compliance unverified until rule/instruction documents are checked.
 6. Write, compile, render every page, and review the PDF.
@@ -26,6 +26,8 @@ Sections are not independent essays stapled together. Each one states, in its op
 ## Develop the explanation
 
 For the central models and results, connect the question, modeling choice, assumptions, formulation, solution and interpretation in continuous prose. Explain why a key objective or constraint represents the real problem, how a non-obvious equation follows, and what each important variable and parameter means, including units. Describe enough of the actual algorithm, stopping criteria and parameter selection for a reader to understand the computation. Allocate detail according to mathematical difficulty and consequence; a familiar algebraic step needs less space than a consequential approximation.
+
+Follow the selected claim’s `result_ids` to the relevant `verified_results.output_locator` in the handoff. Read the indexed value at that location. Choose the observation that best distinguishes two interpretations, such as the largest discrepancy hidden by a mean. Give its unit, say what changes for the answer, and identify what the observation leaves unresolved. For a deductive result, a binding constraint, counterexample or short derivation may answer the question more directly. If the available evidence cannot distinguish the alternatives, state the assumption and what data would resolve it.
 
 After reporting a result, explain its magnitude, pattern, comparison and practical implication using the available evidence. Describe where performance changes or a constraint becomes active, and connect that observation to the model when justified. Distinguish an observed pattern from a plausible explanation when the mechanism has not been tested. Avoid leaving the reader with a formula, a table and a sentence saying that the method works.
 
@@ -89,7 +91,7 @@ Use this priority whenever sources conflict: a current official paper template a
 
 ## Reader-facing quality
 
-Before finalizing, review the paper as a reader: which key reasoning step is too compressed to follow, which result is merely announced, which existing evidence would be clearer as a figure, and which figure lacks interpretation? Repair specific gaps using the current evidence, and retain additions that improve understanding. Record material findings in the existing quality report; do not add a scoring matrix, minimum length, image quota or extra approval. An optional presentation improvement is P2; a missing explanation that makes a central claim unassessable is classified by its actual impact, not by paper length.
+Before finalizing, set aside the handoff and read the body as a judge seeing the problem for the first time. Try to answer the section’s question using a specific passage, equation, table or figure. If the answer depends on private notes, use the indexed evidence to repair the passage or qualify the claim. In the existing content review, point to the passage that answers a consequential question or describe the unresolved gap. Record material findings in the existing quality report; do not add a scoring matrix, minimum length, image quota or extra approval. An optional presentation improvement is P2; a missing explanation that makes a central claim unassessable is classified by its actual impact, not by paper length.
 
 - Explain why equations and algorithms are used and what results mean.
 - Prefer a representative result plus interpretation over number dumping.
