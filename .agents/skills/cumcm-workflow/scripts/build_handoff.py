@@ -241,17 +241,26 @@ def paper_payload(root: Path) -> dict[str, Any]:
     lineage_findings, _ = review_lineage(root, review)
     supported_states = {"supported_not_reproduced", "reproduced", "partially_supported"}
     verified_results = [
-        {key: item.get(key) for key in ("result_id", "name", "value", "unit", "scope", "evidence_state")}
+        {key: item.get(key) for key in ("result_id", "name", "value", "unit", "scope", "evidence_state", "output_locator")}
         for item in results.get("results", [])
         if isinstance(item, dict) and item.get("evidence_state") in supported_states
     ]
+    verified_ids = {result["result_id"] for result in verified_results}
     selected_claims = [
-        {key: item.get(key) for key in ("claim_id", "text", "scope", "evidence_state", "limitations")}
+        {**{key: item.get(key) for key in ("claim_id", "text", "scope", "evidence_state", "limitations")},
+         "result_ids": [rid for rid in item.get("evidence", {}).get("result_ids", []) if rid in verified_ids]}
         for item in claims.get("claims", [])
         if isinstance(item, dict) and item.get("evidence_state") in supported_states
     ]
     materials = official_paper_materials(root)
     return {
+        "next_task": (
+            "For each subproblem, frame the modeling decision a reader needs to understand in the section purpose. "
+            "Follow the claim's result_ids to the indexed output_locator. Use the most revealing observation, "
+            "comparison or derivation to explain the decision. When linking an intermediate measure to the "
+            "requested outcome, identify evidence for the effect on that outcome or say it remains unknown. "
+            "Before delivery, answer the reader's question from the draft alone."
+        ),
         "problem_summary": [
             {"subproblem_id": item.get("subproblem_id"), "request": item.get("request"), "expected_output": item.get("expected_output")}
             for item in facts.get("subproblems", []) if isinstance(item, dict)
