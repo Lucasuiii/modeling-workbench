@@ -53,6 +53,10 @@ python3 "$S/record_decision.py" --project <p> --stage <stage> \
 
 ### Explicit stage-scoped delegation
 
+**At conversational initialization**, ask once before creating a new workspace: “这个项目要开启托管吗？① 人工确认：三项都由你决定；② 托管建模：主代理选模、审结论，你签收成品；③ 全程托管：主代理也负责最终本地验收。” Accept a custom subset. If the opening request already specifies the decision owners, use it directly. An unqualified yes to an ambiguous question cannot grant final delivery. Leave the choice pending until the user replies; read-only intake may proceed. An explicit skip uses human review. A resume uses the existing project and its stage grants; do not show the startup question again.
+
+Pass the selected checkpoints as repeated `--delegate-stage` arguments to `init_project.py`, together with `--user-turn-ref` pointing to the reply. Omit both for human review. Tell the user who owns each checkpoint after initialization. Direct, noninteractive calls without flags retain human review.
+
 The user may explicitly delegate judgment to the lead agent for a named checkpoint. Never infer delegation from a general request to continue, and never self-grant it. The user may delegate some stages while retaining the others; final delivery remains human-controlled unless separately delegated. Record the actual user-turn reference and only the stages the user explicitly delegated. For each such stage the lead agent must review all current material and record its own identity and decision honestly:
 
 ```bash

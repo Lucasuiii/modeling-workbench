@@ -79,12 +79,10 @@ Read the complete .agents/skills/cumcm-workflow/SKILL.md in the tools directory.
 Check the environment and official materials first; do not overwrite existing work.
 Report missing dependencies without installing them in this conversation.
 Identify the contest, year, paper language and submission requirements from
-the materials; ask me if unclear. Follow the Skill to initialize the project
-and begin problem analysis. Wait for my explicit confirmation at model selection,
-conclusions before paper writing, and final delivery.
+the materials; ask me if unclear. At initialization ask how I want to delegate decisions, then start problem analysis.
 ```
 
-**Follow the stage prompts to review the work.** Reuse the prepared environment by starting at step 2 for another problem. To resume interrupted work, provide the project output directory and ask to “resume cumcm-workflow”; resume an existing project instead of initializing it again.
+**At startup choose human review, delegated modeling with user sign-off, or delegation including final local delivery.** You can also specify individual checkpoints. Reuse the prepared environment by starting at step 2 for another problem. To resume interrupted work, provide the project output directory and ask to “resume cumcm-workflow”; resume an existing project instead of initializing it again.
 
 You can also ask “check my environment” or “where is this project now?”. The agent uses environment or project diagnostics to report missing dependencies, evidence issues and pending decisions. These tools do not install software, change project state or approve work for you.
 
