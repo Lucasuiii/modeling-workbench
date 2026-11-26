@@ -12,9 +12,12 @@ sys.dont_write_bytecode = True
 
 
 def inspect_project(root: Path) -> dict:
+    from record_delegation import DELEGATABLE_STAGES, active_grant
     from workflow_checks import CONTRACT_PATHS, STAGES, check_project, check_schema, require_human_checkpoint
 
     root = root.resolve()
+    owners = {stage: "delegated_lead_agent" if active_grant(root, stage) else "human_user"
+              for stage in DELEGATABLE_STAGES}
     state = json.loads((root / CONTRACT_PATHS["state"]).read_text(encoding="utf-8"))
     invalid = check_schema(state, "state", "intake", CONTRACT_PATHS["state"])
     if invalid:
@@ -36,13 +39,7 @@ def inspect_project(root: Path) -> dict:
             authority = "delegated_lead_agent" if contract[field].get("reviewer_kind") == "lead_agent" else "human_user"
             checkpoints.append({"stage": checkpoint, "dependent_action": dependent, "status": "accepted_current", "authority": authority, "reason": f"current {authority} decision"})
         except ValueError as exc:
-            try:
-                delegation = json.loads((root / ".cumcm/delegations" / f"{checkpoint}.json").read_text(encoding="utf-8"))
-                delegated = (isinstance(delegation, dict) and delegation.get("stage") == checkpoint
-                             and isinstance(delegation.get("user_turn_ref"), str)
-                             and bool(delegation["user_turn_ref"].strip()))
-            except (OSError, ValueError):
-                delegated = False
+            delegated = owners[checkpoint] == "delegated_lead_agent"
             reason = str(exc)
             if delegated and ("awaits the user" in reason or "awaits the user's" in reason):
                 reason = "lead agent review and decision are pending"
@@ -64,7 +61,7 @@ def inspect_project(root: Path) -> dict:
     else:
         action = "按当前阶段指南核对剩余工作；确实完成后使用现有记录命令推进，不由状态工具自动推进。"
     return {
-        "project": str(root), "current_stage": stage,
+        "project": str(root), "current_stage": stage, "decision_owners": owners,
         "declared_stage_status": state["stages"][stage],
         "summary": summary, "checkpoints": checkpoints, "technical_errors": technical, "pending_review": review,
         "warnings": warnings, "findings": [f.to_dict() for f in findings],
@@ -99,6 +96,10 @@ def main() -> int:
         print(json.dumps(report, ensure_ascii=False, indent=2))
     else:
         print(f"当前阶段：{report['current_stage']}（记录状态：{report['declared_stage_status']}）")
+        labels = {"model-design": "选模", "validation": "结论", "delivery": "最终签收"}
+        owners = report["decision_owners"]
+        print("后续决定权限：" + " ｜ ".join(f"{label}：{'主代理' if owners[stage] == 'delegated_lead_agent' else '用户'}"
+                                         for stage, label in labels.items()))
         print(f"实时检查：{report['summary']['gate_status']}；检查范围截至当前阶段")
         for key, label in (("technical_errors", "需修复"), ("pending_review", "待确认"), ("warnings", "警告")):
             print(f"{label}：{len(report[key])} 项")

@@ -815,11 +815,6 @@ def require_human_checkpoint(root: Path, stage: str) -> None:
         raise ValueError(f"{stage} awaits the user; no checkpoint recorded")
     if check.get("decision") != "accepted" or check.get("reviewer_kind") not in {"human_user", "lead_agent"}:
         raise ValueError(f"{stage} awaits the user's explicit decision; model self-review cannot approve it")
-    if check.get("reviewer_kind") == "lead_agent":
-        authority_rel = f".cumcm/delegations/{stage}.json"
-        authority, authority_error = read_json(root / authority_rel)
-        if authority_error or not isinstance(authority, dict) or authority.get("stage") != stage or not nonempty(authority.get("user_turn_ref")):
-            raise ValueError(f"{stage} has no valid user delegation")
     checks = {"model-design": lambda: check_selection_check(data, rel),
               "validation": lambda: check_conclusion_check(data, rel),
               "delivery": lambda: check_final_check(data, rel, data.get("compile"))}
@@ -836,8 +831,14 @@ def require_human_checkpoint(root: Path, stage: str) -> None:
         records = snapshot.get("artifacts", []) if isinstance(snapshot, dict) else []
         record = next((item for item in records if item.get("path") == rel), None)
         if check.get("reviewer_kind") == "lead_agent":
-            if not any(item.get("path") == authority_rel for item in records if isinstance(item, dict)):
-                raise ValueError(f"{stage} snapshot does not bind user delegation")
+            from record_delegation import read_stage_record, stage_records
+            scope = {item.get("path") for item in records if isinstance(item, dict)}
+            grants = [path for path in stage_records(root, stage) if path.relative_to(root).as_posix() in scope]
+            if len(grants) != 1:
+                raise ValueError(f"{stage} snapshot does not bind one user delegation")
+            authority = read_stage_record(grants[0], stage)
+            if not authority or authority.get("action", "grant") != "grant":
+                raise ValueError(f"{stage} has no valid recorded delegation")
             try:
                 events = [json.loads(line) for line in (root / ".cumcm/decisions.jsonl").read_text(encoding="utf-8").splitlines() if line.strip()]
                 matching = [event for event in events if event.get("decision_id") == snapshot.get("decision_id")]

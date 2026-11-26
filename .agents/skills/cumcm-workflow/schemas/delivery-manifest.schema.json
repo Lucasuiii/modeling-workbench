@@ -143,6 +143,7 @@
       "type": "array"
     },
     "excluded_files": {
+      "description": "Project-relative file paths explicitly excluded from delivery packages. Legacy free-text explanations are descriptive.",
       "type": "array"
     },
     "final_check": {

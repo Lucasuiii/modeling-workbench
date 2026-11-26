@@ -92,6 +92,8 @@ the materials; ask me if unclear. At initialization briefly explain delegation, 
 
 You can also delegate a single decision, such as model selection. Submitting to a competition platform requires separate permission.
 
+Ask “Who decides each stage?” at any point, or say “I’ll take final delivery back; keep model selection and validation delegated.” The lead agent uses `project_status.py` to show all three owners. Changes persist on resume and apply to future decisions. Earlier acceptances retain the original reviewer.
+
 Reuse the prepared environment by starting at step 2 for another problem. To resume interrupted work, provide the project output directory and ask to “resume cumcm-workflow”; resume an existing project instead of initializing it again.
 
 You can also ask “check my environment” or “where is this project now?”. The agent uses environment or project diagnostics to report missing dependencies, evidence issues and pending decisions. These tools do not install software, change project state or approve work for you.
@@ -318,7 +320,7 @@ The receipt records project sources and figures actually read by TeX; source ZIP
 
 Compiles, hashes the PDF, reads the page count, rasterises every page into `.cumcm/tmp/pages/`, derives layout checks from the engine log, and refreshes the machine fields of `PAPER_QUALITY_REPORT.layout_report`. Those pages are what the final check has to present — then actually look at them.
 
-For delivery, run `refresh_evidence.py --project <p> --only delivery --package`. ZIPs preserve project-relative paths and are checked for missing or stale declared files; this does not replace execution after extraction. Refresh never rewrites official sources or unchanged manifests.
+For delivery, run `refresh_evidence.py --project <p> --only delivery --package`. The editable paper ZIP contains compilation inputs. The computation ZIP contains supporting files and omits organizer originals by default. Declare any rule-required exceptions individually. Add `--internal-reproduction` for a separate local `.cumcm/reproduction.zip` with frozen inputs. Acceptance inspects delivered archives. Test execution by extracting into an empty directory. Refresh never rewrites official sources or unchanged manifests.
 
 v0.6 deleted `PAPER_TRACEABILITY.json` (the property it promised is measured directly on the PDF) and the eight-dimension self-attested quality matrix.
 

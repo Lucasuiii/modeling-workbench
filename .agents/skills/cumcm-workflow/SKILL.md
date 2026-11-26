@@ -74,6 +74,8 @@ python3 "$S/record_decision.py" --project <p> --stage <stage> --decision accepte
   --reviewer <actual-lead-agent-identity> --task-turn-ref <same-user-delegation-turn> --summary <review-and-decision>
 ```
 
+On resume, or when asked who decides, run `project_status.py --project <p>`. Report `decision_owners` for the next decisions, even at intake. When the user takes a stage back, run `record_delegation.py --project <p> --stage <stage> --revoke --user-turn-ref <actual-revocation-turn>` for that stage. Future delegation requires a fresh explicit instruction. Historical signatures stay bound to the grant used at the time.
+
 This records an agent decision, never a human approval. Delegated validation requires a current independent review and package; delegated delivery additionally requires a valid delivery package, final quality and compile records, and every rendered page. `--scope` can add files but cannot remove the default material from a delegated decision. The authorization and reviewed material are snapshot-bound; changed material requires a new review and decision. Delegation does not replace independent review, allow external submission, or authorize a push. Before delivery the lead agent must actually inspect all rendered pages if delivery was delegated. User-turn references are honest conversation records, not authentication.
 
 If a decision write was interrupted, run `record_decision.py --project <p> --recover` before dependent work. Recovery checks the original material and reply. If a binding changed, reopen the named stage and present the revision.
@@ -114,6 +116,6 @@ Build handoffs with `build_handoff.py`; read [handoffs](references/handoffs.md) 
 - Derive review priorities from the current task, not previous failure examples. Check task coverage, model assumptions, solution validity and claim scope using a few tests or independent arguments that could expose a plausible wrong answer. Choose applicable mathematical properties; do not require every problem to run the same tests. A repair must address the failure mechanism and affected conclusions, not only the failing example.
 - Claims use `supported_not_reproduced` unless an isolated rerun and comparison establish `reproduced`. Label simulations and synthetic scenarios explicitly.
 - Keep workflow IDs and evidence bookkeeping out of reader-facing prose. Compilation logs do not establish visual quality; inspect rendered pages.
-- `refresh_evidence.py --only delivery --package` builds declared ZIPs with project-relative directories and refreshes their existing metadata. It never refreshes official sources. No-change refreshes do not rewrite files.
+- `refresh_evidence.py --only delivery --package` builds declared ZIPs with project-relative directories and refreshes their existing metadata. The paper ZIP uses compilation dependencies. The support ZIP omits organizer originals by default. Add `--internal-reproduction` only for a local copy with frozen inputs. See the delivery guide for per-file exceptions and submission archive inspection. It never refreshes official sources. No-change refreshes do not rewrite files.
 
 Use [artifact contracts](references/artifact-contracts.md) only for an unfamiliar artifact and [evidence rules](references/evidence-rules.md) for unresolved evidence semantics. Do not read every reference at startup.

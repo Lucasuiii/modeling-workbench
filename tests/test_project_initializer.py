@@ -42,6 +42,12 @@ class ProjectInitializerTests(unittest.TestCase):
             for path in directory.glob("*.json"):
                 grant = json.loads(path.read_bytes())
                 self.assertEqual((grant["stage"], grant["user_turn_ref"]), (path.stem, "startup-reply"))
+            status = subprocess.run([sys.executable, str(SCRIPTS / "project_status.py"),
+                                     "--project", str(project), "--json"], check=True, capture_output=True)
+            report = json.loads(status.stdout)
+            self.assertEqual(report["current_stage"], "intake")
+            self.assertEqual(report["decision_owners"], {"model-design": "delegated_lead_agent",
+                             "validation": "delegated_lead_agent", "delivery": "human_user"})
             self.assertFalse((project / ".cumcm/decisions.jsonl").exists())
 
     def test_one_command_creates_complete_intake_workspace(self):
