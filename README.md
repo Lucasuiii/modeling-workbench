@@ -354,7 +354,7 @@ python3 $S/init_project.py --project ~/cumcm/2026B --project-id CUMCM-2026-B --o
 
 **② 拆题**：agent 写 `PROBLEM_FACTS.json`（每条事实注明来源文件与位置）和 `TASK_CAPABILITIES.json`（每个小问一个负责人 + 可能失败的验收检查）。
 
-**③ 提候选**：agent 在 `MODEL_CONTRACT.json` 里写 2 个候选，各带 `why_considered` 和 `discriminating_evidence`。
+**③ 提候选**：有多个合理候选时，先写清哪种试算结果会让你改选。若考虑升级模型，在 `why_considered` 说明它想修复基线的哪项不足，在 `discriminating_evidence` 写下能检验这一点的比较。
 
 **④ 探索评估**：
 

@@ -87,6 +87,7 @@
                   "minLength": 1
                 },
                 "why_considered": {
+                  "description": "For an upgrade, name the baseline weakness or suspected failure and how the change could address it.",
                   "type": "string",
                   "minLength": 1
                 },
@@ -97,7 +98,7 @@
                     "type": "string",
                     "minLength": 1
                   },
-                  "description": "What observation would separate this candidate from the others."
+                  "description": "Which observable outcome on comparable cases would favor this candidate or change the choice."
                 },
                 "status": {
                   "enum": [
@@ -114,6 +115,7 @@
                   }
                 },
                 "decision_rationale": {
+                  "description": "Explain the choice using the observed outcome, including when the simpler baseline sufficed or the comparison was inconclusive.",
                   "type": [
                     "string",
                     "null"

@@ -56,7 +56,11 @@ Each entry in `components[].candidates` records:
 | `evaluation_run_ids` | the runs that actually evaluated it |
 | `decision_rationale` | why it won or lost, in terms of what those runs showed |
 
-`discriminating_evidence` is the field that makes the comparison real. "Candidate A is more accurate" is not a discriminator; "whether the residual on the held-out window exceeds 5%" is, because a run can answer it.
+Before exploring competing candidates, use `discriminating_evidence` to say which observation would change the choice. Specify the task outcome, comparable cases, and what would favor each candidate. Use a numerical tolerance when the task or measurement precision supports it. If the trial cannot resolve the difference, keep the simpler adequate method or leave the choice open for a more informative trial.
+
+When proposing extra complexity, use `why_considered` to name the baseline behavior it could improve and explain how the change could help. An untested weakness is a hypothesis for exploration. Use `decision_rationale` after the trial to identify the observed shortcoming, whether the added complexity addressed it, and the scope of that result. A structural counterexample can establish a shortcoming directly. If the baseline meets the task and the trial shows no relevant advantage, retain it.
+
+For example, to decide whether to add an intercept when predicting remaining time, compare errors in remaining minutes at the same simulated cutoffs. An improvement in fit on the visible segment alone leaves that choice unresolved.
 
 Evaluate candidates with cheap exploratory runs — they cost no declarations and never block:
 
