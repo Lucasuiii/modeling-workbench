@@ -257,8 +257,9 @@ def paper_payload(root: Path) -> dict[str, Any]:
         "next_task": (
             "For each subproblem, frame the modeling decision a reader needs to understand in the section purpose. "
             "Follow the claim's result_ids to the indexed output_locator. Use the most revealing observation, "
-            "comparison or derivation to explain the decision and its limits. If no comparison was evaluated, "
-            "identify the missing evidence. Before delivery, answer the reader's question from the draft alone."
+            "comparison or derivation to explain the decision. When linking an intermediate measure to the "
+            "requested outcome, identify evidence for the effect on that outcome or say it remains unknown. "
+            "Before delivery, answer the reader's question from the draft alone."
         ),
         "problem_summary": [
             {"subproblem_id": item.get("subproblem_id"), "request": item.get("request"), "expected_output": item.get("expected_output")}
