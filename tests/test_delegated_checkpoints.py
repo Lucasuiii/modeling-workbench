@@ -43,6 +43,30 @@ class DelegatedCheckpoints(unittest.TestCase):
             with self.assertRaises(ValueError):
                 require_human_checkpoint(root, "model-design")
 
+    def test_revoke_changes_future_owner_and_preserves_accepted_decision(self):
+        from project_status import inspect_project
+        with tempfile.TemporaryDirectory() as temp:
+            root = make_project(Path(temp))
+            model_with_candidates(root, ["selected"])
+            for stage in ("model-design", "validation", "delivery"):
+                self.assertEqual(self.grant(root, stage).returncode, 0)
+            self.assertEqual(self.decide(root, "model-design").returncode, 0)
+            action = ("--project", str(root), "--stage", "model-design", "--revoke",
+                      "--user-turn-ref", "take-it-back")
+            for _ in range(2):
+                result = run_script("record_delegation.py", *action)
+                self.assertEqual(result.returncode, 0, result.stderr)
+            owners = inspect_project(root)["decision_owners"]
+            self.assertEqual(owners, {"model-design": "human_user", "validation": "delegated_lead_agent",
+                                      "delivery": "delegated_lead_agent"})
+            require_human_checkpoint(root, "model-design")
+            self.assertNotEqual(self.decide(root, "model-design").returncode, 0)
+            self.assertNotEqual(self.grant(root, "model-design").returncode, 0)
+            self.assertEqual(self.grant(root, "model-design", "fresh-grant").returncode, 0)
+            require_human_checkpoint(root, "model-design")
+            self.assertEqual(self.decide(root, "model-design", "fresh-grant").returncode, 0)
+            require_human_checkpoint(root, "model-design")
+
     def test_validation_requires_current_independent_review_and_retains_default_scope(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)

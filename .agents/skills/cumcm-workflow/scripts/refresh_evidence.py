@@ -63,6 +63,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Refresh size/hash metadata for files already declared in the workspace")
     parser.add_argument("--project", required=True, type=Path)
     parser.add_argument("--package", action="store_true", help="build ZIPs from existing delivery/LaTeX/result declarations, preserving directories")
+    parser.add_argument("--internal-reproduction", action="store_true", help="also build .cumcm/reproduction.zip with all recorded calculation inputs")
     parser.add_argument("--only", choices=sorted(TARGETS), help="refresh only this existing manifest; official sources are never refreshed")
     parser.add_argument("--runs", action="store_true", help="also refresh run manifest input/output metadata")
     args = parser.parse_args()
@@ -70,11 +71,14 @@ def main() -> int:
     if not root.is_dir():
         parser.error(f"project is not a directory: {root}")
 
+    if args.internal_reproduction and not args.package:
+        parser.error("--internal-reproduction requires --package")
     if args.package:
         if args.only and args.only != "delivery":
             parser.error("--package updates delivery; use --only delivery or omit --only")
         from delivery_archives import build_archives
-        build_archives(root, json.loads((root / TARGETS["delivery"]).read_text(encoding="utf-8")))
+        build_archives(root, json.loads((root / TARGETS["delivery"]).read_text(encoding="utf-8")),
+                       internal_reproduction=args.internal_reproduction)
     total = 0
     for name, rel in TARGETS.items():
         if args.only and name != args.only:

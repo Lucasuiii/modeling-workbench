@@ -80,6 +80,45 @@ class CurrentEvidenceTests(unittest.TestCase):
         write_json(self.root, self.runpath, self.run)
         return live
 
+    def test_paper_support_and_internal_archives_have_separate_members(self):
+        self.delivery['deliverables']['editable_latex_source'] = {
+            'archive': 'delivery/paper.zip', 'entrypoint': 'paper/main.tex'}
+        (self.root / 'paper/main.tex').write_text('paper', encoding='utf-8')
+        official = 'problem/official/problem.txt'
+        build_archives(self.root, self.delivery, internal_reproduction=True)
+        def names(rel):
+            with zipfile.ZipFile(self.root / rel) as archive:
+                return set(archive.namelist())
+        self.assertNotIn('code/solve.py', names('delivery/paper.zip'))
+        self.assertNotIn(official, names('delivery/source.zip'))
+        self.assertIn(official, names('.cumcm/reproduction.zip'))
+        self.assertIn('code/solve.py', names('delivery/source.zip'))
+        with zipfile.ZipFile(self.root / 'delivery/source.zip', 'a') as archive:
+            archive.write(self.root / official, official)
+        self.assertTrue(check_archives(self.root, self.delivery))
+        self.delivery['files'] = [{'role': 'supporting_evidence', 'path': official}]
+        build_archives(self.root, self.delivery)
+        self.assertIn(official, names('delivery/source.zip'))
+        self.delivery['excluded_files'] = [official]
+        build_archives(self.root, self.delivery)
+        self.assertNotIn(official, names('delivery/source.zip'))
+        self.assertEqual(check_archives(self.root, self.delivery), [])
+
+    def test_independently_assembled_submission_obeys_file_policy(self):
+        rel = 'delivery/submission.zip'
+        official = 'problem/official/problem.txt'
+        self.delivery = {'files': [{'path': rel, 'role': 'submission_package'}],
+                         'excluded_files': ['private/notes.txt']}
+        with zipfile.ZipFile(self.root / rel, 'w') as archive:
+            archive.writestr('code/solve.py', 'print(1)')
+        self.assertEqual(check_archives(self.root, self.delivery), [])
+        with zipfile.ZipFile(self.root / rel, 'a') as archive:
+            archive.write(self.root / official, 'problem.txt')
+            archive.writestr('private/notes.txt', 'notes')
+        errors = ' '.join(check_archives(self.root, self.delivery))
+        self.assertIn('problem.txt', errors)
+        self.assertIn('private/notes.txt', errors)
+
     def test_zip_uses_frozen_output_bytes_at_portable_member_path(self):
         rel = self.run['outputs'][0]['path']; live = '/'.join(rel.split('/')[3:])
         target = self.root / live; target.parent.mkdir(parents=True, exist_ok=True); target.write_text('wrong live output', encoding="utf-8")

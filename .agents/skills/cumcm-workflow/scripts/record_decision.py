@@ -19,6 +19,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import evidence_json
+from record_delegation import active_grant
 from workflow_checks import STAGES, safe_project_path, sha256, stage_scope_paths
 from provenance import digest_records
 
@@ -146,7 +147,10 @@ def finish_pending(root: Path, pending: dict) -> None:
         if pending.get("delegated"):
             from workflow_checks import require_delegated_prerequisites
             required = set(stage_scope_paths(root, stage) + require_delegated_prerequisites(root, stage))
-            required.add(f".cumcm/delegations/{stage}.json")
+            grant = active_grant(root, stage)
+            if not grant or grant[1] != event["task_turn_ref"]:
+                raise ValueError(f"{stage} decision requires the active user delegation")
+            required.add(grant[0])
             if not required.issubset({entry["path"] for entry in event["scope"]}):
                 raise ValueError(f"{stage} required material changed; record revision_requested for {stage}")
         elif pending.get("default_scope"):
@@ -259,13 +263,10 @@ def _record_decision(args, root: Path, parser: argparse.ArgumentParser, log_path
             parser.error("--delegated applies only to a delegated checkpoint acceptance")
         if not args.reviewer.strip() or args.reviewer in {"agent", "user", "human"}:
             parser.error("--delegated requires the actual lead agent identity in --reviewer")
-        authority_path = root / ".cumcm/delegations" / f"{args.stage}.json"
-        try:
-            authority = json.loads(authority_path.read_text(encoding="utf-8"))
-        except (OSError, ValueError):
-            parser.error("missing explicit user delegation for this stage")
-        if not isinstance(authority, dict) or authority.get("stage") != args.stage or authority.get("user_turn_ref") != args.task_turn_ref or not args.task_turn_ref.strip():
-            parser.error("delegation stage or user turn reference does not match")
+        grant = active_grant(root, args.stage)
+        if not grant or grant[1] != args.task_turn_ref:
+            parser.error("missing active delegation for this stage and user turn")
+        authority_rel = grant[0]
 
         from workflow_checks import require_delegated_prerequisites
         try:
@@ -290,7 +291,7 @@ def _record_decision(args, root: Path, parser: argparse.ArgumentParser, log_path
             if args.stage in CHECKPOINT_PATHS:
                 expected.add(CHECKPOINT_PATHS[args.stage][0])
             if args.delegated:
-                expected.add(f".cumcm/delegations/{args.stage}.json")
+                expected.add(authority_rel)
             recorded = last["scope"]
             if expected != {r["path"] for r in recorded} or any(
                 (target := safe_project_path(root, r["path"])) is None or not target.is_file()
@@ -369,7 +370,7 @@ def _record_decision(args, root: Path, parser: argparse.ArgumentParser, log_path
         rel, _ = checkpoint_paths[args.stage]
         scope_paths = list(dict.fromkeys([*scope_paths, rel]))
     if args.delegated:
-        scope_paths = list(dict.fromkeys([*scope_paths, f".cumcm/delegations/{args.stage}.json"]))
+        scope_paths = list(dict.fromkeys([*scope_paths, authority_rel]))
     if ".cumcm/state.json" in scope_paths:
         parser.error("workflow state is mutable and must not be included in a decision scope")
     scope = []
