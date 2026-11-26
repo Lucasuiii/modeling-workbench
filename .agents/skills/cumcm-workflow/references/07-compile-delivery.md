@@ -12,6 +12,8 @@ Produce the receipt with the recorder, not by hand:
 python3 "$S/record_compile.py" --project <p> --update-quality
 ```
 
+Each TeX pass, PDF page count, and page-rendering command has a 300-second limit. Set `--timeout SECONDS` for a larger paper. On timeout, inspect `delivery/compile.log` for the command that stopped, then retry. The failed attempt leaves no current compile receipt or partial page previews.
+
 ## Hard checks
 
 - the selected compile attempt exited successfully with the declared engine;
