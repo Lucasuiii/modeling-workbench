@@ -16,7 +16,7 @@ The Claude Code Skill at `.claude/skills/cumcm-workflow/SKILL.md` routes to the 
 - **Machine facts are recorded, never hand-written.** If a change would make an agent type a SHA-256, an exit code, a page count or a result value into a contract, the change is wrong; extend a recorder instead.
 - **Two knobs only.** `mode` (`working` / `finalizing`) and `--gate-mode` (`preflight` / `enforce`). Do not reintroduce a profile axis.
 - **Four stage statuses.** `not_started`, `in_progress`, `passed`, `needs_revision`.
-- **Schemas describe shape, the checker decides strictness.** Mode-dependent requirements (for example the frozen model contract) live in `workflow_checks.py`, not in a JSON Schema `required` list — a schema cannot see the mode.
+- **Schemas describe shape, the checker decides strictness.** Mode-dependent requirements (for example the frozen model contract) live in the checker and its `scripts/workflow_validation/` stage modules, not in a JSON Schema `required` list — a schema cannot see the mode.
 - **A schema is also a prompt.** An optional field that nothing consumes will still get filled in by an agent. Delete it rather than leaving it optional.
 - **Exploratory runs never block.** Anything about an `official_run: false` run is at most a warning.
 - **Runs are append-only and their evidence is frozen.** A rerun appends a successor with `parent_run_id`; it must never overwrite a run directory. Declared source and outputs are copied into `runs/<id>/{source,outputs}/` mirroring the original paths, and hashed as copies. Supersession is derived from the parent chain -- never write it back into the old manifest, because that changes its hash and stales every decision bound to it.
@@ -49,4 +49,4 @@ Verify a fix by reverting it and confirming the new test goes red. A test that p
 
 ## Version bumps
 
-`WORKFLOW_VERSION` in `workflow_checks.py` and the recorders, the `const` in every schema, and `pyproject.toml`. The checker rejects any contract whose `schema_version` differs; that is intentional, and existing workspaces are re-initialised rather than migrated. Say so in the README when you bump.
+`WORKFLOW_VERSION` in `scripts/workflow_validation/contracts.py` and the recorders, the `const` in every schema, and `pyproject.toml`. The checker rejects any contract whose `schema_version` differs; that is intentional, and existing workspaces are re-initialised rather than migrated. Say so in the README when you bump.

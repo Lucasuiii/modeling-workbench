@@ -30,6 +30,20 @@ intake -> problem-analysis -> model-design -> computation
 
 状态机不再假设单向前进。`record_decision.py --decision revision_requested` 是 reopen 原语：它把目标阶段及全部下游置为 `needs_revision`，删除对应 snapshot，并把 `current_stage` 移回去。下游处于 `needs_revision` 是重开后的正常状态；只有下游仍标 `passed` 才是矛盾（`STATE-E008`）。
 
+## 校验代码从哪里改
+
+`scripts/workflow_checks.py` 提供 `check_project` 和已有的导入入口，负责按阶段装载契约、执行关卡并汇总报告。阶段规则集中在 `scripts/workflow_validation/`。
+
+| 要修改的规则 | 模块 |
+|---|---|
+| 题目事实、能力覆盖、候选模型和选模证据 | `modeling.py` |
+| 正式运行、冻结文件和结果索引 | `computation.py` |
+| 独立复核、结论证据和适用范围 | `review.py` |
+| 论文、图表、编译记录和交付包 | `paper_delivery.py` |
+| 阶段交接、决策日志和签收快照 | `lifecycle.py` |
+
+`contracts.py` 定义版本、阶段及契约路径；`common.py` 提供统一诊断、文件读取和 schema 校验。阶段模块直接引用所需的共享逻辑。新的跨阶段调用由 `check_project` 编排。
+
 ## 模型选择的位置
 
 模型不是在 model-design 里定下来的，而是在 model-design 里**摆开**、由 computation **裁决**：

@@ -55,10 +55,12 @@ def diagnose(timeout: float = 10, modules: tuple[str, ...] = (), probe_matlab: b
 
     required = ["SKILL.md", "scripts/init_project.py", "scripts/workflow_checks.py",
                 "scripts/record_run.py", "scripts/project_status.py", "schemas/workflow-state.schema.json"]
+    required.extend(f"scripts/workflow_validation/{name}.py" for name in
+                    ("contracts", "common", "modeling", "computation", "review", "paper_delivery", "lifecycle"))
     missing = [p for p in required if not (SKILL / p).is_file()]
     version = None
     try:
-        tree = ast.parse((SKILL / "scripts/workflow_checks.py").read_text(encoding="utf-8"))
+        tree = ast.parse((SKILL / "scripts/workflow_validation/contracts.py").read_text(encoding="utf-8"))
         version = next(ast.literal_eval(node.value) for node in tree.body
                        if isinstance(node, ast.Assign) and any(isinstance(t, ast.Name) and t.id == "WORKFLOW_VERSION" for t in node.targets))
     except (OSError, SyntaxError, ValueError, StopIteration):
