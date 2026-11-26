@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any
 
 from inventory_artifacts import sha256
+from record_delegation import DELEGATABLE_STAGES, record_delegation
 from workflow_checks import check_project
 
 
@@ -234,7 +235,10 @@ def create_staged_project(
     return {"created_at": created_at, "summary": summary, "source_count": len(sources["sources"])}
 
 
-def initialize(project: Path, project_id: str, official: Path) -> dict[str, Any]:
+def initialize(project: Path, project_id: str, official: Path, *,
+               delegated_stages: tuple[str, ...] = (), user_turn_ref: str = "") -> dict[str, Any]:
+    if bool(delegated_stages) != bool(user_turn_ref.strip()):
+        raise ValueError("supply both --delegate-stage and --user-turn-ref for an explicit startup delegation")
     project = project.resolve(strict=False)
     official = official.resolve()
     if project.exists():
@@ -250,6 +254,8 @@ def initialize(project: Path, project_id: str, official: Path) -> dict[str, Any]
         staging = Path(temp) / "workspace"
         staging.mkdir()
         result = create_staged_project(staging, project, project_id, source_records, skipped_sources)
+        for stage in dict.fromkeys(delegated_stages):
+            record_delegation(staging, stage, user_turn_ref)
         if project.exists():
             project.rmdir()
         os.replace(staging, project)
@@ -265,14 +271,19 @@ def main() -> int:
     parser.add_argument("--project", required=True, type=Path, help="new or empty project directory")
     parser.add_argument("--project-id", required=True, help="stable project identifier, for example CUMCM-2026-B")
     parser.add_argument("--official", required=True, type=Path, help="official input file or directory")
+    parser.add_argument("--delegate-stage", action="append", choices=DELEGATABLE_STAGES, default=[],
+                        help="checkpoint explicitly delegated at startup; repeat for each selected checkpoint")
+    parser.add_argument("--user-turn-ref", default="", help="actual user reply authorizing the selected checkpoints")
     args = parser.parse_args()
     if not args.project_id.strip():
         parser.error("project-id must not be empty")
     try:
-        result = initialize(args.project, args.project_id.strip(), args.official)
+        result = initialize(args.project, args.project_id.strip(), args.official,
+                            delegated_stages=tuple(args.delegate_stage), user_turn_ref=args.user_turn_ref)
     except (OSError, ValueError, json.JSONDecodeError) as exc:
         parser.error(str(exc))
     print(f"initialized: {result['project']}")
+    print("lead-agent checkpoints: " + (", ".join(dict.fromkeys(args.delegate_stage)) or "none (human review)"))
     print(f"official sources: {result['source_count']}")
     if result["skipped_sources"]:
         print(f"ignored operating-system metadata: {', '.join(result['skipped_sources'])}")

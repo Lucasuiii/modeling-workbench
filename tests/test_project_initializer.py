@@ -24,6 +24,26 @@ def load_initializer():
 
 
 class ProjectInitializerTests(unittest.TestCase):
+    def test_startup_authority_is_scoped_and_requires_an_explicit_reply(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            official = root / "problem.txt"
+            official.write_text("synthetic input", encoding="utf-8")
+            project = root / "workspace"
+            command = [sys.executable, str(SCRIPTS / "init_project.py"), "--project", str(project),
+                       "--project-id", "example", "--official", str(official), "--delegate-stage", "model-design",
+                       "--delegate-stage", "validation"]
+            missing = subprocess.run(command, capture_output=True)
+            self.assertNotEqual(missing.returncode, 0)
+            self.assertFalse(project.exists())
+            subprocess.run([*command, "--user-turn-ref", "startup-reply"], check=True, capture_output=True)
+            directory = project / ".cumcm/delegations"
+            self.assertEqual({p.stem for p in directory.glob("*.json")}, {"model-design", "validation"})
+            for path in directory.glob("*.json"):
+                grant = json.loads(path.read_bytes())
+                self.assertEqual((grant["stage"], grant["user_turn_ref"]), (path.stem, "startup-reply"))
+            self.assertFalse((project / ".cumcm/decisions.jsonl").exists())
+
     def test_one_command_creates_complete_intake_workspace(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
