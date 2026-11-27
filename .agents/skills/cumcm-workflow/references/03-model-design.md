@@ -30,6 +30,14 @@ validation
 
 Model design does not choose the model. It sets up the comparison so that computation can settle it.
 
+## When a subproblem repeatedly misses its target
+
+Before selection, look at a representative failure on development data. Identify the assumption or decision that could explain the miss. If a plausible alternative would behave differently on that case, use the existing candidate trial to test that prediction. In delegated model design, the lead can assign this comparison to the owner of the affected subproblem and keep the current solution as the baseline.
+
+Run both versions on the same development cases, including cases the baseline solved. Compare the target metric, any newly failing cases, and the outcome under the task’s actual acceptance rule. For example, a routing policy can reduce average cost yet lose a batch because it fails to finish one route. Check other subproblems that consume a changed result or share the changed code.
+
+Use the paired results in the existing `decision_rationale`. Continue exploring while there is a feasible comparison whose outcome could change the choice. When the alternatives tried offer no useful gain, keep the stronger supported candidate and identify any requirement it still misses. Cases used to diagnose or select a repair count as development evidence; use fresh cases for a new held-out claim.
+
 ## The checkpoint at selection
 
 Before a candidate becomes `selected`, present the choice to the checkpoint reviewer and record the decision in `MODEL_CONTRACT.selection_check`. This is the earliest of the three checkpoints and the cheapest: only exploratory comparisons have been run, so a rejection precedes official computation. It is also the one with the most leverage, because everything downstream inherits the judgement criterion settled here.
