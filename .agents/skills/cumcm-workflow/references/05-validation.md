@@ -16,7 +16,7 @@ The package includes a frozen copy of [mechanism-validation.md](mechanism-valida
 
 Use the general review criteria in `assets/independent-review/REVIEW_REQUEST.md`: derive risks from the current problem, then check task coverage, model validity, implementation, discriminating evidence and claim scope. Classify by the consequence for the answer: P0 invalidates the answer or delivery; P1 is a material limitation within a supported, task-relevant answer; P2 is an optional improvement. Give concrete evidence for blockers, not a preference for a different model.
 
-A valid proof can support a general claim; finite experiments support only their justified coverage. Scope reduction cannot erase an unanswered requirement. Review a repair's effect on other conclusions, not just the original failing case. Select a few high-value checks appropriate to the problem; no universal experiment checklist is required.
+A valid proof can support a general claim; finite experiments support only their justified coverage. Scope reduction cannot erase an unanswered requirement. Review a repair's effect on other conclusions, not just the original failing case. Select a few high-value checks appropriate to the problem; no universal experiment checklist is required. If a finding calls for changing the model, use the [subproblem repair guidance](03-model-design.md#when-a-subproblem-repeatedly-misses-its-target) when reopening model design.
 
 Verdicts are `accepted`, `accepted_with_concerns`, `revision_required`, and `inconclusive`. Only an open P0 permits `revision_required`. Open P1/P2 items remain visible as warnings or suggestions and do not block paper work.
 

@@ -261,6 +261,8 @@ python3 $S/index_result.py --project <p> --follow-lineage
 
 Exploratory runs are recorded, never trusted, and never block. Only a successful `official_run: true` run may support a formal result.
 
+When a subproblem repeatedly misses its target, the lead can assign a paired trial to its owner. Compare the proposed repair with the current model on the same development cases, including previously successful cases, and apply the original acceptance rule. [Model selection and subproblem repair](.agents/skills/cumcm-workflow/references/03-model-design.md#when-a-subproblem-repeatedly-misses-its-target)
+
 **Runs are append-only and their evidence is frozen.** `--rerun` never overwrites: it appends `RUN-Q1-002` with `parent_run_id: RUN-Q1-001`, and every run copies its declared source and outputs into `runs/<id>/source/…` and `runs/<id>/outputs/…`, mirroring the original layout. Frozen copies are immutable, so a preserved run stays verifiable forever — and the most valuable check survives, because staleness is now measured as *frozen copy versus live file*:
 
 ```

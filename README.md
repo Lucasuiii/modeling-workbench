@@ -364,6 +364,8 @@ python3 $S/record_run.py --project <p> --candidate CAND-B -- python3 code/try_b.
 python3 $S/cumcm_check.py --project <p> --stage model-design --gate-mode preflight
 ```
 
+如果某个小问反复达不到目标，主代理可以让该小问的负责人挑一个失败案例，提出能解释失分的备选方案，再用同一批开发样本比较。选定前检查原先做对的案例有没有退步，并按原题验收规则判断是否真的更好。[选模与局部返工](.agents/skills/cumcm-workflow/references/03-model-design.md#when-a-subproblem-repeatedly-misses-its-target)
+
 **⑤ 选定并正式运行**：把胜者置 `selected` 并写理由，然后
 
 ```bash
