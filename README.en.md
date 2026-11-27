@@ -376,6 +376,8 @@ python3 -m compileall -q .agents/skills/cumcm-workflow/scripts tests
 
 [Paired modeling evaluation](examples/workflow-evaluation/README.md) contains three synthetic problems, staged inputs and a blind scoring rubric (Chinese).
 
+[Fog Snake v4](examples/fog-snake-v4/README.md) is a runnable online optimization benchmark with a paired direct-vs-workbench study and a replay tool (Chinese).
+
 CI invokes the full unittest suite in three environments: Ubuntu/Python 3.10, Ubuntu/Python 3.13 with TeX Live/Poppler, and native Windows/Python 3.13. Tool-dependent tests skip when their tools are absent; the Linux LaTeX job exercises real XeLaTeX compilation. The Windows job also runs compileall and JSON Schema validation. Check [Actions](https://github.com/Lucasuiii/modeling-workbench/actions) for actual pass/fail status. Shared fixtures live in `tests/workflow_fixtures.py` and `tests/recorder_fixtures.py`; all regression cases are retained. Tool-dependent tests skip locally when their tools are absent.
 
 ## 12. Limits and licence
