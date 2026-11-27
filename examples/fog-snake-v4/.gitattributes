@@ -1,0 +1,4 @@
+# Historical kit and player checksums use LF on every platform.
+*.py text eol=lf
+*.md text eol=lf
+*.json text eol=lf

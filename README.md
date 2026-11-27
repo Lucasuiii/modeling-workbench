@@ -560,6 +560,8 @@ python3 -m compileall -q .agents/skills/cumcm-workflow/scripts tests
 
 [三题建模质量对照评测](examples/workflow-evaluation/README.md)提供题目、分阶段输入和盲评标准。
 
+[迷雾贪吃蛇 v4](examples/fog-snake-v4/README.md) 提供一套可独立运行的在线优化题，以及直接解题与工作台的配对盲测和复跑程序。
+
 CI 分三路运行测试：Ubuntu＋Python 3.10、Ubuntu＋Python 3.13＋TeX Live/Poppler，以及原生 Windows＋Python 3.13。三路都调用完整 unittest；缺少外部工具的用例按条件跳过，Linux LaTeX 作业负责**真实 XeLaTeX 编译**。Windows 作业另运行 compileall 和 JSON Schema 校验。实际通过状态以 [Actions](https://github.com/Lucasuiii/modeling-workbench/actions) 为准。共用 fixture 位于 `tests/workflow_fixtures.py` 与 `tests/recorder_fixtures.py`，回归用例仍全部保留。
 
 不向下兼容：v0.8 拒绝任何 `schema_version` 不是 `0.8.0` 的契约，仓库里也不再保留迁移脚本。旧工作区请用官方文件重新初始化。

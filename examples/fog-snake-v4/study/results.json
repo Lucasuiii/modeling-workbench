@@ -1,0 +1,948 @@
+{
+  "studies": {
+    "fresh-study": {
+      "boards": [
+        "25a1164061e2e816912ae6ef2728c97c27aee6186523e5e86b624919fefdc5d5",
+        "cb6bcd2502c9a45652fb0903f8b83c30c211e00a63c8868aa4445f52d2e11dd6",
+        "d88a0bfd5cb74c50dea660153306be875592af77c2a1a1f5915291681be3fbc1"
+      ],
+      "pairs": {
+        "final": {
+          "A": {
+            "standard": "085514a9e93b",
+            "boss": "ca8fef68965a"
+          },
+          "B": {
+            "standard": "28b029a14588",
+            "boss": "e17d3fa429da"
+          }
+        }
+      },
+      "runs": {
+        "standard/085514a9e93b": [
+          {
+            "levels": {
+              "garden": {
+                "complete": 20,
+                "target_met": 17
+              },
+              "orchard": {
+                "complete": 20,
+                "target_met": 9
+              },
+              "cellar": {
+                "complete": 20,
+                "target_met": 17
+              }
+            },
+            "cases_sha256": "35ec3c98a3920181a0c160d903ef1fb382e6a34f0af40e0fe8d60d39e5f8648b"
+          },
+          {
+            "levels": {
+              "garden": {
+                "complete": 20,
+                "target_met": 17
+              },
+              "orchard": {
+                "complete": 20,
+                "target_met": 4
+              },
+              "cellar": {
+                "complete": 20,
+                "target_met": 16
+              }
+            },
+            "cases_sha256": "2c2508c1a76be4181f9bd9046de79b2539d40019f584d2c3a1e5bcf393a980e7"
+          },
+          {
+            "levels": {
+              "garden": {
+                "complete": 20,
+                "target_met": 17
+              },
+              "orchard": {
+                "complete": 20,
+                "target_met": 9
+              },
+              "cellar": {
+                "complete": 20,
+                "target_met": 15
+              }
+            },
+            "cases_sha256": "2ef3677b9919936fc91d1fecb024da8d69f48ae292c5bac9c4594170c7faa951"
+          }
+        ],
+        "boss/ca8fef68965a": [
+          {
+            "levels": {
+              "marsh": {
+                "complete": 19,
+                "target_met": 0
+              }
+            },
+            "cases_sha256": "c20a89d8994af927beab0a0e2e1e76f94bcfccf6f28a0f54ad2d2e71ff5ab129"
+          },
+          {
+            "levels": {
+              "marsh": {
+                "complete": 20,
+                "target_met": 0
+              }
+            },
+            "cases_sha256": "fa5d84d66ed13a244676b32d1c02c8bb2aefa71189b279f71b4c817900463b5e"
+          },
+          {
+            "levels": {
+              "marsh": {
+                "complete": 20,
+                "target_met": 0
+              }
+            },
+            "cases_sha256": "9b76253015479b0dbaa3ed0957403bf477368e9bc61602fee6e6e356bbf136fe"
+          }
+        ],
+        "standard/28b029a14588": [
+          {
+            "levels": {
+              "garden": {
+                "complete": 20,
+                "target_met": 20
+              },
+              "orchard": {
+                "complete": 20,
+                "target_met": 11
+              },
+              "cellar": {
+                "complete": 20,
+                "target_met": 14
+              }
+            },
+            "cases_sha256": "5d85e3f42af4858d75cfc8d7c47173837199cb8456f9eacc9620d2a0157d402f"
+          },
+          {
+            "levels": {
+              "garden": {
+                "complete": 20,
+                "target_met": 20
+              },
+              "orchard": {
+                "complete": 20,
+                "target_met": 11
+              },
+              "cellar": {
+                "complete": 20,
+                "target_met": 15
+              }
+            },
+            "cases_sha256": "32fb65f0844e8a4c9b7ffd6f924a9cd572eaad65b9b39ca460e15cf46a3a73ae"
+          },
+          {
+            "levels": {
+              "garden": {
+                "complete": 20,
+                "target_met": 20
+              },
+              "orchard": {
+                "complete": 20,
+                "target_met": 12
+              },
+              "cellar": {
+                "complete": 20,
+                "target_met": 16
+              }
+            },
+            "cases_sha256": "9a376b2a769770f73ac2c0e8b43e567ccbfe4607b9acf6b39948abb126271914"
+          }
+        ],
+        "boss/e17d3fa429da": [
+          {
+            "levels": {
+              "marsh": {
+                "complete": 20,
+                "target_met": 3
+              }
+            },
+            "cases_sha256": "8a752deae509123237dff6b19351ba10e6e2cf59d1084e54e10ca375e2213df2"
+          },
+          {
+            "levels": {
+              "marsh": {
+                "complete": 20,
+                "target_met": 0
+              }
+            },
+            "cases_sha256": "fb697ab71a1d6f9e4c45f6782bcb3c2c27b76aae3f32e243cae455027819c4b9"
+          },
+          {
+            "levels": {
+              "marsh": {
+                "complete": 20,
+                "target_met": 5
+              }
+            },
+            "cases_sha256": "ce57a5c7f1a56f0382d54e213bc1936475725daf3173427b628d733ec7ce4a54"
+          }
+        ]
+      }
+    },
+    "feedback": {
+      "boards": [
+        "49f2ac38cc7eed3c65af19a33be9c68a3126daa19d626372a893730629bdcf96",
+        "bcee1d46f66c1666cf4ae83424df1cb5b4e637b5c1f255a1b5ea45ca9154f937",
+        "a36d773cf6b02cb2663f24710eb9f470d6f9823703effb775afe7b4dd0b2588f"
+      ],
+      "pairs": {
+        "before": {
+          "A": {
+            "standard": "085514a9e93b",
+            "boss": "ca8fef68965a"
+          },
+          "B": {
+            "standard": "28b029a14588",
+            "boss": "e17d3fa429da"
+          }
+        },
+        "after": {
+          "A": {
+            "standard": "91aa5b6afce9",
+            "boss": "9d24988aa321"
+          },
+          "B": {
+            "standard": "28b029a14588",
+            "boss": "e7f39e129a22"
+          }
+        }
+      },
+      "runs": {
+        "standard/085514a9e93b": [
+          {
+            "levels": {
+              "garden": {
+                "complete": 20,
+                "target_met": 19
+              },
+              "orchard": {
+                "complete": 20,
+                "target_met": 10
+              },
+              "cellar": {
+                "complete": 20,
+                "target_met": 15
+              }
+            },
+            "cases_sha256": "7406bbcad44da4a3f33962882784e032b79da6615db29d46d9706b240af6b4cd"
+          },
+          {
+            "levels": {
+              "garden": {
+                "complete": 20,
+                "target_met": 17
+              },
+              "orchard": {
+                "complete": 20,
+                "target_met": 6
+              },
+              "cellar": {
+                "complete": 20,
+                "target_met": 14
+              }
+            },
+            "cases_sha256": "787260081d37740829361c676c02b6545758f7eb145735a33a0e8d99a129de05"
+          },
+          {
+            "levels": {
+              "garden": {
+                "complete": 20,
+                "target_met": 20
+              },
+              "orchard": {
+                "complete": 20,
+                "target_met": 11
+              },
+              "cellar": {
+                "complete": 20,
+                "target_met": 16
+              }
+            },
+            "cases_sha256": "7c94b7b91d1822f8230b9fc1bb242b330fecdca70eaf9b8dbb0c23b50a659a4a"
+          }
+        ],
+        "boss/ca8fef68965a": [
+          {
+            "levels": {
+              "marsh": {
+                "complete": 17,
+                "target_met": 0
+              }
+            },
+            "cases_sha256": "ca5ccb7a270625193d38b25e46cf6aa0daa8fe1738e1ddae9e85c8496a5b44de"
+          },
+          {
+            "levels": {
+              "marsh": {
+                "complete": 20,
+                "target_met": 0
+              }
+            },
+            "cases_sha256": "66d08fdb21cd02e8ffa6f572074169a7f94d41d489aebe7290541cd953503e77"
+          },
+          {
+            "levels": {
+              "marsh": {
+                "complete": 20,
+                "target_met": 0
+              }
+            },
+            "cases_sha256": "fdf7d40bc4dd8112196b56787b8d50400074805a470ee1627171897555cfccf1"
+          }
+        ],
+        "standard/28b029a14588": [
+          {
+            "levels": {
+              "garden": {
+                "complete": 20,
+                "target_met": 20
+              },
+              "orchard": {
+                "complete": 20,
+                "target_met": 12
+              },
+              "cellar": {
+                "complete": 20,
+                "target_met": 18
+              }
+            },
+            "cases_sha256": "0a2b9002b1da58e02fb627c4831ea94a8a04560a72f1d35190004e464550ca95"
+          },
+          {
+            "levels": {
+              "garden": {
+                "complete": 20,
+                "target_met": 20
+              },
+              "orchard": {
+                "complete": 20,
+                "target_met": 16
+              },
+              "cellar": {
+                "complete": 20,
+                "target_met": 16
+              }
+            },
+            "cases_sha256": "0cd77da2ee22acfc2c94747af0823b0c80917fe943cd00700eda8d143837aff9"
+          },
+          {
+            "levels": {
+              "garden": {
+                "complete": 20,
+                "target_met": 20
+              },
+              "orchard": {
+                "complete": 20,
+                "target_met": 17
+              },
+              "cellar": {
+                "complete": 20,
+                "target_met": 16
+              }
+            },
+            "cases_sha256": "a8af342af9bc3c2de7dfb556879106c352a943ce1e35b10c5f48b21ef1e4f497"
+          }
+        ],
+        "boss/e17d3fa429da": [
+          {
+            "levels": {
+              "marsh": {
+                "complete": 20,
+                "target_met": 2
+              }
+            },
+            "cases_sha256": "e486adc6a67bf575bdf381561bb2191223c3f309090e33480c987e2a211cac95"
+          },
+          {
+            "levels": {
+              "marsh": {
+                "complete": 20,
+                "target_met": 3
+              }
+            },
+            "cases_sha256": "214b56678f17dcbe37ce70188a66099bfe95be8942107ae0df99e7130319a887"
+          },
+          {
+            "levels": {
+              "marsh": {
+                "complete": 20,
+                "target_met": 1
+              }
+            },
+            "cases_sha256": "fa4cd1daf60aa32de684439af89223edd7492741cb7437d49b6303fe38efb1d5"
+          }
+        ],
+        "standard/91aa5b6afce9": [
+          {
+            "levels": {
+              "garden": {
+                "complete": 20,
+                "target_met": 19
+              },
+              "orchard": {
+                "complete": 20,
+                "target_met": 14
+              },
+              "cellar": {
+                "complete": 20,
+                "target_met": 15
+              }
+            },
+            "cases_sha256": "d60e68df1c681448b730211084341c5ea7efa80392be64862613686d76e80f2a"
+          },
+          {
+            "levels": {
+              "garden": {
+                "complete": 20,
+                "target_met": 17
+              },
+              "orchard": {
+                "complete": 19,
+                "target_met": 15
+              },
+              "cellar": {
+                "complete": 20,
+                "target_met": 14
+              }
+            },
+            "cases_sha256": "3c523e26ef4c13471e799197b86d7c9cb6b84d0b4dac9dd94bd2db7aafbc0646"
+          },
+          {
+            "levels": {
+              "garden": {
+                "complete": 20,
+                "target_met": 20
+              },
+              "orchard": {
+                "complete": 19,
+                "target_met": 14
+              },
+              "cellar": {
+                "complete": 20,
+                "target_met": 16
+              }
+            },
+            "cases_sha256": "55d572b8c6ca28e4dacaf55205355a75ff3067fd88b177373513067cb3b71a8e"
+          }
+        ],
+        "boss/9d24988aa321": [
+          {
+            "levels": {
+              "marsh": {
+                "complete": 20,
+                "target_met": 2
+              }
+            },
+            "cases_sha256": "b621ac537cf6109928d70e455d4b6737f451b3277714a60a5cd256c98bbd808d"
+          },
+          {
+            "levels": {
+              "marsh": {
+                "complete": 20,
+                "target_met": 4
+              }
+            },
+            "cases_sha256": "ff91a73d019735a6235b09dce02859590f28c70813dd0315babe3ce6deb7a171"
+          },
+          {
+            "levels": {
+              "marsh": {
+                "complete": 20,
+                "target_met": 5
+              }
+            },
+            "cases_sha256": "a349afe166d3317e0ed1891f5875a32469544e11e85a5b544f570b29fab9319e"
+          }
+        ],
+        "boss/e7f39e129a22": [
+          {
+            "levels": {
+              "marsh": {
+                "complete": 20,
+                "target_met": 11
+              }
+            },
+            "cases_sha256": "675f4bd81d63c53fb8388f62ff152de148ca10642751b614e7a0d54a159588d4"
+          },
+          {
+            "levels": {
+              "marsh": {
+                "complete": 20,
+                "target_met": 7
+              }
+            },
+            "cases_sha256": "a532b339141428dc78010129b5f1d82e3c9fa955face3dbe2f9744e9a65ea3ae"
+          },
+          {
+            "levels": {
+              "marsh": {
+                "complete": 20,
+                "target_met": 10
+              }
+            },
+            "cases_sha256": "360eaf0313d5e74ded35f71e55772370628631a037d90eae3081f9bbca9ff6bb"
+          }
+        ]
+      }
+    },
+    "budget": {
+      "boards": [
+        "d3533b7934516bf6284ca4b4159ec743ba6f393b3d20d908aa1fd9b8a7fdc102",
+        "bcacf6537bdee7b83362f05e80c1198b6a4b610f6dec4b3093ef141cb0f9910d",
+        "33383dbeecd09d92ab4dcc15d9c4595d05a12484e26ecfcc2a5fa4d25970bb3b"
+      ],
+      "pairs": {
+        "10000": {
+          "A": {
+            "output_tokens": 10021,
+            "standard": "5e5f0be3904a",
+            "boss": "8646462b2a0b"
+          },
+          "B": {
+            "output_tokens": 9985,
+            "standard": "c917bc33814e",
+            "boss": "78b58b1492e0"
+          }
+        },
+        "20000": {
+          "A": {
+            "output_tokens": 15362,
+            "standard": "5e5f0be3904a",
+            "boss": "287e21e10140"
+          },
+          "B": {
+            "output_tokens": 20595,
+            "standard": "c917bc33814e",
+            "boss": "32d1f9498d64"
+          }
+        },
+        "paired20": {
+          "A": {
+            "output_tokens": 21115,
+            "standard": "aa4768fe4e96",
+            "boss": "7337c6840ba6"
+          },
+          "B": {
+            "output_tokens": 20595,
+            "standard": "c917bc33814e",
+            "boss": "32d1f9498d64"
+          }
+        },
+        "final": {
+          "A": {
+            "output_tokens": 32659,
+            "standard": "beace9e49dd3",
+            "boss": "30db9f329c53"
+          },
+          "B": {
+            "output_tokens": 41733,
+            "standard": "c917bc33814e",
+            "boss": "32d1f9498d64"
+          }
+        }
+      },
+      "runs": {
+        "standard/5e5f0be3904a": [
+          {
+            "levels": {
+              "garden": {
+                "complete": 20,
+                "target_met": 19
+              },
+              "orchard": {
+                "complete": 19,
+                "target_met": 11
+              },
+              "cellar": {
+                "complete": 20,
+                "target_met": 15
+              }
+            },
+            "cases_sha256": "962ef429458d4798333b24079bec658775c99e406cea8db2ecf6cb8e49b9f9ee"
+          },
+          {
+            "levels": {
+              "garden": {
+                "complete": 20,
+                "target_met": 18
+              },
+              "orchard": {
+                "complete": 19,
+                "target_met": 12
+              },
+              "cellar": {
+                "complete": 20,
+                "target_met": 15
+              }
+            },
+            "cases_sha256": "9592151554179720a6989f67dcf1e1e7936ecb2283107435c8eee5f4ea172e0a"
+          },
+          {
+            "levels": {
+              "garden": {
+                "complete": 20,
+                "target_met": 20
+              },
+              "orchard": {
+                "complete": 19,
+                "target_met": 10
+              },
+              "cellar": {
+                "complete": 19,
+                "target_met": 17
+              }
+            },
+            "cases_sha256": "70f1bb9b67139a2ed9ae35e9870a86c12d4349c91a2b7f954db6748c1399937e"
+          }
+        ],
+        "boss/8646462b2a0b": [
+          {
+            "levels": {
+              "marsh": {
+                "complete": 19,
+                "target_met": 1
+              }
+            },
+            "cases_sha256": "fe12c7bc7556af9de864c62bc45805671b65cbbb7c70573f299f4724f90a16a5"
+          },
+          {
+            "levels": {
+              "marsh": {
+                "complete": 18,
+                "target_met": 4
+              }
+            },
+            "cases_sha256": "6eb779fddea3ae46a8ad3d90cab93c377cb7ef235b8f557fe91e457a4a8cc95d"
+          },
+          {
+            "levels": {
+              "marsh": {
+                "complete": 19,
+                "target_met": 0
+              }
+            },
+            "cases_sha256": "a59b7e27c4fc65cb73c46048c4b1b3710b10824a05d57b5168e78a8d87b95496"
+          }
+        ],
+        "standard/c917bc33814e": [
+          {
+            "levels": {
+              "garden": {
+                "complete": 20,
+                "target_met": 17
+              },
+              "orchard": {
+                "complete": 20,
+                "target_met": 18
+              },
+              "cellar": {
+                "complete": 20,
+                "target_met": 16
+              }
+            },
+            "cases_sha256": "f7b861f15aedd9cb3907a49ebf9f2757ed4338725f194d48513ab76935f4fd00"
+          },
+          {
+            "levels": {
+              "garden": {
+                "complete": 20,
+                "target_met": 19
+              },
+              "orchard": {
+                "complete": 20,
+                "target_met": 19
+              },
+              "cellar": {
+                "complete": 20,
+                "target_met": 18
+              }
+            },
+            "cases_sha256": "9cb29663f1470a13c526edefaf03fc7790668c86c0740ad47769b1d2ee5f1243"
+          },
+          {
+            "levels": {
+              "garden": {
+                "complete": 20,
+                "target_met": 19
+              },
+              "orchard": {
+                "complete": 20,
+                "target_met": 19
+              },
+              "cellar": {
+                "complete": 19,
+                "target_met": 17
+              }
+            },
+            "cases_sha256": "ceadd0af6ae32a6b89855d1f49c7dc7b6f8694f2b01a099321855fe3ccf39c68"
+          }
+        ],
+        "boss/78b58b1492e0": [
+          {
+            "levels": {
+              "marsh": {
+                "complete": 19,
+                "target_met": 0
+              }
+            },
+            "cases_sha256": "acb2e4bc5f7eb5c817500888759334f258775b80a0cc3ab66752f6d8c74b7955"
+          },
+          {
+            "levels": {
+              "marsh": {
+                "complete": 20,
+                "target_met": 0
+              }
+            },
+            "cases_sha256": "c9765d56d9fc949a36933dfe7ee158fbb641d154a6751576fab3d94ee76f93a3"
+          },
+          {
+            "levels": {
+              "marsh": {
+                "complete": 20,
+                "target_met": 0
+              }
+            },
+            "cases_sha256": "a84484752a00dda61f6818869c434e2338467d2d5e27591c6f6a7188a46841a7"
+          }
+        ],
+        "boss/287e21e10140": [
+          {
+            "levels": {
+              "marsh": {
+                "complete": 20,
+                "target_met": 9
+              }
+            },
+            "cases_sha256": "0e3b9e361753c8d6f261ab812686b9175548cd64aa6cd8da219b64ba1229c5a7"
+          },
+          {
+            "levels": {
+              "marsh": {
+                "complete": 20,
+                "target_met": 10
+              }
+            },
+            "cases_sha256": "a7a1ef422c3d1f285fd3a89f1a7fe7a17e8288f252546e1d642867ebf2e8d8b3"
+          },
+          {
+            "levels": {
+              "marsh": {
+                "complete": 20,
+                "target_met": 8
+              }
+            },
+            "cases_sha256": "cf9f266994c08e91aa0f90e6dd9ea231c4c5f989f7ae35964b37ff70fc3032a8"
+          }
+        ],
+        "boss/32d1f9498d64": [
+          {
+            "levels": {
+              "marsh": {
+                "complete": 20,
+                "target_met": 6
+              }
+            },
+            "cases_sha256": "9a942393233ddf50c36887e7c17d14fcfc2c6177c24f507c1fe18c0ed5755e3d"
+          },
+          {
+            "levels": {
+              "marsh": {
+                "complete": 20,
+                "target_met": 3
+              }
+            },
+            "cases_sha256": "6838b8e500dfac0e89fa29d7ae0b1456a235b19f86cacf8d4766ad5611a3aef6"
+          },
+          {
+            "levels": {
+              "marsh": {
+                "complete": 20,
+                "target_met": 9
+              }
+            },
+            "cases_sha256": "42ff51bafe35655a05c3fab2206458ed1d584449d703aed80a2b93a689e9ccaa"
+          }
+        ],
+        "standard/aa4768fe4e96": [
+          {
+            "levels": {
+              "garden": {
+                "complete": 20,
+                "target_met": 19
+              },
+              "orchard": {
+                "complete": 20,
+                "target_met": 12
+              },
+              "cellar": {
+                "complete": 20,
+                "target_met": 15
+              }
+            },
+            "cases_sha256": "4d0aa37b3a9959f5ff9f865d78753207f02990d36fd8d85ae7147ea2420feca6"
+          },
+          {
+            "levels": {
+              "garden": {
+                "complete": 20,
+                "target_met": 18
+              },
+              "orchard": {
+                "complete": 20,
+                "target_met": 12
+              },
+              "cellar": {
+                "complete": 20,
+                "target_met": 15
+              }
+            },
+            "cases_sha256": "b6925e0f527986696bc66a4098cd3eb6533909a3855734dca331526124b8abdb"
+          },
+          {
+            "levels": {
+              "garden": {
+                "complete": 20,
+                "target_met": 20
+              },
+              "orchard": {
+                "complete": 20,
+                "target_met": 10
+              },
+              "cellar": {
+                "complete": 19,
+                "target_met": 17
+              }
+            },
+            "cases_sha256": "e67c40181d716dfbeae39af1435041ffa1d58ea790a4a68105b31ae0ff718189"
+          }
+        ],
+        "boss/7337c6840ba6": [
+          {
+            "levels": {
+              "marsh": {
+                "complete": 20,
+                "target_met": 12
+              }
+            },
+            "cases_sha256": "c6e7793803eca6e6953ac133f1ab8d1a9b45e4bbbec3238794c946b33690a2a5"
+          },
+          {
+            "levels": {
+              "marsh": {
+                "complete": 20,
+                "target_met": 11
+              }
+            },
+            "cases_sha256": "9515f8880568d8303d1adaf05bdf56d9a6dc80769a4fc64dde86c7c452d1ff3d"
+          },
+          {
+            "levels": {
+              "marsh": {
+                "complete": 20,
+                "target_met": 9
+              }
+            },
+            "cases_sha256": "abcd366da9c14f292c3c993d7e062038599c6e515dec7c9a114276d280d7990c"
+          }
+        ],
+        "standard/beace9e49dd3": [
+          {
+            "levels": {
+              "garden": {
+                "complete": 20,
+                "target_met": 19
+              },
+              "orchard": {
+                "complete": 20,
+                "target_met": 17
+              },
+              "cellar": {
+                "complete": 20,
+                "target_met": 15
+              }
+            },
+            "cases_sha256": "232431c71bac226d61e38f86538f23f6d0f52feb2bf46598335919a90ecb0c2d"
+          },
+          {
+            "levels": {
+              "garden": {
+                "complete": 20,
+                "target_met": 18
+              },
+              "orchard": {
+                "complete": 20,
+                "target_met": 18
+              },
+              "cellar": {
+                "complete": 20,
+                "target_met": 15
+              }
+            },
+            "cases_sha256": "e189f87e4779e535ae6ccf248fedba099d02aedf5bb8fd966b00db9e7dca4f20"
+          },
+          {
+            "levels": {
+              "garden": {
+                "complete": 20,
+                "target_met": 20
+              },
+              "orchard": {
+                "complete": 20,
+                "target_met": 14
+              },
+              "cellar": {
+                "complete": 20,
+                "target_met": 17
+              }
+            },
+            "cases_sha256": "4c70a9056c8b343dbb661c31a6d4c57e28a6b0e223e75c27c369a4a0d302497d"
+          }
+        ],
+        "boss/30db9f329c53": [
+          {
+            "levels": {
+              "marsh": {
+                "complete": 20,
+                "target_met": 17
+              }
+            },
+            "cases_sha256": "584299671bbcc9fb8d6b5ba723aceb1e62e08bfed8ebb91027b0df39c590535d"
+          },
+          {
+            "levels": {
+              "marsh": {
+                "complete": 19,
+                "target_met": 13
+              }
+            },
+            "cases_sha256": "43196dfa96573e0d73c8d34129ce7150f4b06eca5f2ca0453c8f5d6c3bac11db"
+          },
+          {
+            "levels": {
+              "marsh": {
+                "complete": 20,
+                "target_met": 13
+              }
+            },
+            "cases_sha256": "dd7154e8e9745e1d237b34033994dd768305fecb5884f264bccc30ca95829951"
+          }
+        ]
+      }
+    }
+  },
+  "kit_sha256": {
+    "baseline.py": "44a0718187b736125ac2335637bf7d46beedad126b3476bf52846702cab27b9e",
+    "practice-baseline.json": "a299d1fa4d44d4863db2df1c398ab8d65acc567a111e5a3c24b99412fc980f4f",
+    "game.py": "4b56768e259f78ea7bd41e782d8590b502807da6c1630c70f462698e5555bc94",
+    "test_game.py": "77b4b97b58b9b21ccce1298fc969040766e4ebdf6395cebe61c7a5a761476836",
+    "README.md": "9c5303e39c5cb74b223504aaddf98da4c815807ae71c31357ee902e16fee0e92",
+    "judge.py": "2afb6c46db362e50e7985f989f25b2ba319e1c3870d8fc705d948a5e28b96e42"
+  }
+}
